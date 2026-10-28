@@ -10,793 +10,387 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Papillon Science</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Shippori+Mincho:wght@400;600;800&family=Jost:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Shippori+Mincho:wght@500;700;800&family=Jost:wght@300;400;500&display=swap">
 <style>
-/* Layout: a film in scenes. Fixed live kaleidoscope tunnel behind everything; each scene is a full screen; cinematic letterbox bars drop at scene changes; type is revealed by typewriter / rise; fixed control deck (autoplay, sound) + LINE CTA */
+/* Layout: one continuous first-person flight. A fixed raymarched world fills the screen; the tall page is only a throttle.
+   Text appears as short cinematic subtitles; the only UI is a thin deck, a progress hairline and the closing LINE panel. */
 :root{
-  --ink:#05030a; --ink2:#0d0916; --line:rgba(255,220,160,.18);
-  --gold:#e6b45a; --gold2:#ffdca0; --paper:#f1e9da; --mute:#b3aac2;
-  --green:#06c755; --green2:#05a648;
+  --ink:#04030a; --gold:#e6b45a; --gold2:#ffdca0; --paper:#f3ecdf; --mute:#b7aec6; --line:rgba(255,220,160,.2);
+  --green:#06c755; --green2:#05a648; --amsred:#e0473f;
   --disp:'Cormorant Garamond','Shippori Mincho',serif;
   --jp:'Shippori Mincho','Hiragino Mincho ProN',serif;
   --ui:'Jost','Hiragino Sans',sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--jp);line-height:1.9;overflow-x:hidden}
-#tun{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:block}
-.veil{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(5,3,10,.05) 0,rgba(5,3,10,.5) 60%,rgba(5,3,10,.9) 100%)}
-html{overflow-x:hidden}
-main{position:relative;z-index:2;overflow-x:clip}
-.in{max-width:1000px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
-.scene{min-height:100svh;display:flex;align-items:center;padding-block:14vh}
-.scene.c{text-align:center}
-.scene .in{width:100%}
-.eyebrow::before{content:"\00D7\00D7\00D7";color:#e0473f;letter-spacing:.18em;margin-right:.9em;font-weight:500}
-.city{font-family:var(--disp);font-style:italic;font-size:clamp(1rem,2.6vw,1.25rem);letter-spacing:.2em;color:var(--paper);opacity:.85;margin-top:6px}
-.eyebrow{font-family:var(--ui);letter-spacing:.42em;text-transform:uppercase;font-size:.72rem;color:var(--gold);font-weight:400}
-h1,h2,h3{font-weight:600;line-height:1.25;margin:0;text-wrap:balance}
+html{background:var(--ink)}
+body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--jp);overflow-x:hidden}
+#gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
+.track{height:1300vh}
+/* subtitles */
+.subs{position:fixed;inset:0;z-index:3;pointer-events:none;display:grid;place-items:center;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.sub{grid-area:1/1;text-align:center;line-height:1.25;text-shadow:0 0 30px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.8);word-break:keep-all}
+.sub .ch{display:inline-block;opacity:0;transform:translateY(.4em) scale(1.08);filter:blur(10px);transition:opacity .9s cubic-bezier(.2,.7,.1,1),transform 1.2s cubic-bezier(.2,.7,.1,1),filter 1s;transition-delay:calc(var(--i)*45ms)}
+.sub.on .ch{opacity:1;transform:none;filter:none}
+.sub.out .ch{opacity:0;transform:translateY(-.3em);filter:blur(8px);transition-delay:calc(var(--i)*15ms);transition-duration:.6s}
 .ph{display:inline-block;white-space:nowrap}
-h1,h2,h3,p,summary{word-break:keep-all;overflow-wrap:anywhere}
-.shadow{text-shadow:0 0 24px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.9)}
-/* type scale play */
-.xl{font-size:clamp(2rem,9.2vw,6.4rem);font-weight:800;letter-spacing:.01em}
-.l{font-size:clamp(1.9rem,6.4vw,3.6rem)}
-.m{font-size:clamp(1.2rem,3.6vw,1.7rem)}
-.s{font-size:clamp(.95rem,2.4vw,1.08rem)}
-.tiny{font-family:var(--ui);font-size:.72rem;letter-spacing:.38em;text-transform:uppercase}
-.disp{font-family:var(--disp);font-weight:500;font-style:italic}
-.gold{color:var(--gold2)}
-.prism{text-shadow:none;filter:drop-shadow(0 0 18px rgba(0,0,0,.7));background:linear-gradient(90deg,#ffdca0,#ff7ac0,#7ee8ff,#a6ff8a,#ffdca0);background-size:400% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 9s linear infinite}
+.k1{font-family:var(--disp);font-weight:500;font-size:clamp(1.7rem,8.4vw,6rem);letter-spacing:.04em;color:var(--gold2)}
+.k2{font-family:var(--disp);font-style:italic;font-size:clamp(1rem,2.8vw,1.35rem);letter-spacing:.32em;color:var(--paper);opacity:.9;margin-top:.8em}
+.k3{font-weight:800;font-size:clamp(1.6rem,11vw,6.4rem);letter-spacing:.02em}
+.k4{font-weight:700;font-size:clamp(1.2rem,6.4vw,3.4rem);letter-spacing:.06em}
+.prism{background:linear-gradient(90deg,#ffdca0,#ff7ac0,#7ee8ff,#a6ff8a,#ffdca0);background-size:400% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 9s linear infinite;text-shadow:none;filter:drop-shadow(0 0 22px rgba(0,0,0,.75))}
 @keyframes sh{to{background-position:400% 0}}
-.brand{font-family:var(--disp);font-size:clamp(1.3rem,3.4vw,1.8rem);letter-spacing:.1em;color:var(--gold2)}
-p.body{word-break:keep-all;overflow-wrap:anywhere;line-break:strict;max-width:30em;margin:26px auto 0;color:#e2d9c8}
-.scene:not(.c) p.body{margin-left:0}
-/* reveal mechanics (only when JS armed) */
-.js [data-type] .ch{opacity:0;display:inline-block;transform:translateY(.15em);filter:blur(4px);transition:opacity .25s,transform .35s,filter .35s}
-.js [data-type] .ch.on{opacity:1;transform:none;filter:none}
-.js [data-type].typing::after{content:"";display:inline-block;width:.06em;height:.9em;background:var(--gold2);margin-left:.06em;vertical-align:-.08em;animation:blink .8s steps(1) infinite}
-@keyframes blink{50%{opacity:0}}
-.js [data-rise]{opacity:0;transform:translateY(46px) scale(.97);filter:blur(10px);transition:opacity 1.2s cubic-bezier(.2,.7,.1,1),transform 1.4s cubic-bezier(.2,.7,.1,1),filter 1.2s}
-.js [data-rise].on{opacity:1;transform:none;filter:none}
-.js [data-zoom]{opacity:0;transform:scale(1.6);letter-spacing:.4em;filter:blur(14px);transition:all 1.6s cubic-bezier(.16,.8,.1,1)}
-.js [data-zoom].on{opacity:1;transform:none;letter-spacing:.01em;filter:none}
-.js .prism[data-zoom].on{filter:drop-shadow(0 0 18px rgba(0,0,0,.7))}
-/* butterfly */
-.bf{width:min(56vw,260px);height:auto;filter:drop-shadow(0 0 16px rgba(230,180,90,.6))}
-.bf path,.bf line{fill:none;stroke:var(--gold);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
-.bf .body{fill:var(--gold2);stroke:none}
-.bf .w{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 3s ease-out}
-.bf.on .w{stroke-dashoffset:0}
-.nojs .bf .w{stroke-dashoffset:0}
-/* gets */
-.gets{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-top:46px}
-.get{position:relative;padding:30px 26px;background:rgba(13,9,22,.72);backdrop-filter:blur(8px);border:1px solid var(--line);overflow:hidden}
-.get::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:var(--g)}
-.get .k{font-family:var(--ui);font-size:.66rem;letter-spacing:.3em;color:var(--gold);text-transform:uppercase}
-.get h3{font-size:1.35rem;color:var(--gold2);margin-top:6px}
-.get p{margin:.6em 0 0;color:#ddd4c4;font-size:.94rem}
-.g1{--g:linear-gradient(90deg,#ff3d9a,#ffb347)}.g2{--g:linear-gradient(90deg,#35e0ff,#8a5cff)}.g3{--g:linear-gradient(90deg,#8cff6a,#e6b45a)}
-.steps{list-style:none;padding:0;margin:46px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px;counter-reset:s}
-.steps li{counter-increment:s;border-top:1px solid var(--gold);padding-top:18px}
-.steps li::before{content:"STEP " counter(s);font-family:var(--ui);font-size:.7rem;letter-spacing:.3em;color:var(--gold)}
-.steps h3{font-size:1.25rem;margin-top:6px}
-.steps p{margin:.4em 0 0;color:var(--mute);font-size:.92rem}
-.faq{margin-top:38px;display:grid;gap:12px;max-width:760px}
-.faq{gap:0!important}
-.qa{min-height:46vh;display:flex;align-items:center}
-.qa:first-child{margin-top:4vh}.qa:last-child{margin-bottom:22vh}
-details{width:100%;border:1px solid var(--line);background:rgba(13,9,22,.8);backdrop-filter:blur(8px);padding:20px 24px;transition:border-color .5s,box-shadow .5s,transform .6s}
-details[open]{border-color:var(--gold);box-shadow:0 0 40px rgba(230,180,90,.18);transform:scale(1.02)}
-.qmark{font-family:var(--disp);font-style:italic;color:var(--gold);font-size:1.5rem;margin-right:.5em;line-height:1}
-.ans{display:flex;gap:.6em;align-items:flex-start}
-.ans .qmark{color:#7ee8ff}
-.ans p{margin:0!important}
-summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:16px}
-summary::-webkit-details-marker{display:none}
-summary{align-items:center}
-summary::after{content:"▶";color:var(--gold);font-size:.8rem;transition:transform .5s}
-details[open] summary::after{transform:rotate(90deg)}
-summary>span{flex:1}
-details .ans{margin-top:.9em;padding-top:.9em;border-top:1px solid var(--line)}
-details p{margin:.8em 0 0;color:#ddd4c4;font-size:.94rem}
-summary:focus-visible{outline:2px solid var(--gold2);outline-offset:4px}
-.btn{display:inline-flex;align-items:center;justify-content:center;margin-top:36px;padding:19px 44px;border-radius:999px;background:var(--green);color:#fff;text-decoration:none;font-weight:800;font-size:1.08rem;letter-spacing:.06em;box-shadow:0 0 0 1px rgba(255,255,255,.18),0 10px 44px rgba(6,199,85,.5);transition:transform .2s,background .2s}
-.btn:hover,.btn:focus-visible{background:var(--green2);transform:translateY(-2px);outline:2px solid var(--gold2);outline-offset:3px}
-.note{display:block;font-family:var(--ui);font-size:.74rem;color:var(--mute);margin-top:14px;letter-spacing:.08em}
-.marq{overflow:hidden;white-space:nowrap;border-block:1px solid var(--line);padding-block:14px;margin-top:8vh;font-family:var(--disp);font-style:italic;font-size:clamp(1.6rem,5vw,3rem);color:var(--gold2);opacity:.85}
-.marq span{display:inline-block;animation:mq 26s linear infinite;padding-right:2em}
-@keyframes mq{to{transform:translateX(-50%)}}
-.about{display:grid;gap:4px;margin-top:22px;padding:26px 26px 22px;background:rgba(13,9,22,.62);backdrop-filter:blur(8px);border:1px solid var(--line);max-width:760px}
-.about p.body{margin:0 0 .9em;max-width:none}
-.vid{display:inline-flex;align-items:center;gap:12px;margin-top:26px;padding:15px 26px;border:1px solid var(--gold);color:var(--gold2);text-decoration:none;font-weight:600;letter-spacing:.06em;background:rgba(5,3,10,.55);backdrop-filter:blur(6px);transition:background .25s,color .25s}
-.vid:hover,.vid:focus-visible{background:var(--gold);color:var(--ink);outline:none}
-.yt{position:relative;margin-top:16px;max-width:760px;aspect-ratio:16/9;width:100%;border:1px solid var(--gold);background:radial-gradient(circle at 50% 50%,rgba(230,180,90,.25),rgba(5,3,10,.9) 70%);overflow:hidden;box-shadow:0 0 50px rgba(230,180,90,.18)}
-.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.ytposter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-decoration:none;color:var(--gold2);background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,61,154,.10) 0 10deg,rgba(53,224,255,.08) 10deg 20deg,rgba(230,180,90,.10) 20deg 30deg);animation:spin 30s linear infinite}
-@keyframes spin{to{background-position:0 0;filter:hue-rotate(360deg)}}
-.ytplay{width:78px;height:78px;border-radius:50%;background:rgba(5,3,10,.7);border:2px solid var(--gold2);position:relative;box-shadow:0 0 30px rgba(230,180,90,.5)}
-.ytplay::after{content:"";position:absolute;left:31px;top:23px;border-left:24px solid var(--gold2);border-top:16px solid transparent;border-bottom:16px solid transparent}
-.ytlab{font-family:var(--ui);font-size:.75rem;letter-spacing:.3em;text-shadow:0 0 10px #000}
-.ytposter:hover .ytplay,.ytposter:focus-visible .ytplay{background:var(--gold)}
-.buy{margin-top:26px;text-align:center;max-width:760px}
-.buy p{margin:0;color:var(--paper)}
-.tri{width:0;height:0;border-left:10px solid currentColor;border-top:6px solid transparent;border-bottom:6px solid transparent}
-footer{position:relative;z-index:2;border-top:1px solid var(--line);padding-block:34px 140px;font-size:.76rem;color:var(--mute);font-family:var(--ui);background:rgba(5,3,10,.86)}
-footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
-/* letterbox */
-.lb{position:fixed;left:0;right:0;height:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:30;pointer-events:none;transition:height .9s cubic-bezier(.7,0,.2,1)}
-.lb.t{top:0}.lb.b{bottom:0}
-.lb.on{height:11vh}
-/* control deck */
-.deck{position:fixed;z-index:40;right:max(14px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));display:flex;gap:10px}
-.deck button{appearance:none;border:1px solid var(--line);background:rgba(5,3,10,.66);backdrop-filter:blur(10px);color:var(--gold2);font-family:var(--ui);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;padding:10px 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:8px}
-.deck button:hover,.deck button:focus-visible{border-color:var(--gold);outline:none}
+.xxx{font-family:var(--ui);color:var(--amsred);letter-spacing:.3em;font-size:.8rem;margin-bottom:1.2em;display:block;opacity:0;transition:opacity 1s}
+.sub.on .xxx{opacity:1}
+.sub{max-width:100%}
+/* hint */
+.hint{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:4;font-family:var(--ui);font-size:.68rem;letter-spacing:.4em;color:var(--paper);opacity:.75;text-align:center;transition:opacity .8s;pointer-events:none}
+.hint i{display:block;width:1px;height:34px;margin:10px auto 0;background:linear-gradient(var(--gold2),transparent);animation:dr 1.8s ease-in-out infinite}
+@keyframes dr{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+/* deck */
+.deck{position:fixed;z-index:20;right:max(14px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));display:flex;gap:8px}
+.deck button{appearance:none;border:1px solid var(--line);background:rgba(4,3,10,.45);color:var(--gold2);font-family:var(--ui);font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;padding:9px 13px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:7px}
 .deck button[aria-pressed="true"]{background:var(--gold);color:var(--ink)}
-.deck svg{width:14px;height:14px;fill:currentColor}
-.bars{display:inline-flex;gap:2px;align-items:flex-end;height:12px}
+.deck button:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+.deck svg{width:12px;height:12px;fill:currentColor}
+.bars{display:inline-flex;gap:2px;align-items:flex-end;height:11px}
 .bars i{width:2px;height:30%;background:currentColor}
 [aria-pressed="true"] .bars i{animation:eq .9s ease-in-out infinite alternate}
 .bars i:nth-child(2){animation-delay:-.3s}.bars i:nth-child(3){animation-delay:-.6s}
 @keyframes eq{to{height:100%}}
-.bar{position:fixed;left:0;right:0;bottom:0;z-index:35;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(5,3,10,.82);backdrop-filter:blur(10px);border-top:1px solid var(--line);transform:translateY(110%);transition:transform .5s}
-.bar.show{transform:none}
-.bar a{display:block;max-width:520px;margin:0 auto;text-align:center;padding:14px;border-radius:999px;background:var(--green);color:#fff;font-weight:800;text-decoration:none;letter-spacing:.06em}
-.prog{position:fixed;left:0;top:0;height:2px;background:linear-gradient(90deg,var(--gold),#ff7ac0,#7ee8ff);z-index:41;width:0}
-@media (pointer:coarse),(max-width:820px){.get,details,.bar,.deck button,.lb,.about,.vid{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}.get,details{background:rgba(13,9,22,.86)}.bar{background:rgba(5,3,10,.92)}}
-@media (prefers-reduced-motion:reduce){.prism,.marq span{animation:none}.js [data-rise],.js [data-zoom],.js [data-type] .ch{transition:none}}
+.brandmark{position:fixed;z-index:20;left:max(16px,env(safe-area-inset-left,0px));top:calc(16px + env(safe-area-inset-top,0px));font-family:var(--disp);letter-spacing:.14em;color:var(--gold2);font-size:.95rem;opacity:.8;pointer-events:none}
+.prog{position:fixed;left:0;bottom:0;height:2px;width:0;background:linear-gradient(90deg,var(--gold),#ff7ac0,#7ee8ff);z-index:20}
+/* cinematic bars */
+.lb{position:fixed;left:0;right:0;height:7vh;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0));z-index:2;pointer-events:none}
+.lb.t{top:0}.lb.b{bottom:0;transform:scaleY(-1)}
+/* gate */
+.gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;text-align:center;background:radial-gradient(ellipse at 50% 60%,rgba(40,18,40,.55),rgba(4,3,10,.96) 70%);transition:opacity 1.4s ease,visibility 1.4s;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.gate.gone{opacity:0;visibility:hidden}
+.gate h1{font-family:var(--disp);font-weight:500;font-size:clamp(2.2rem,8vw,4.6rem);letter-spacing:.08em;color:var(--gold2);margin:0}
+.gate .k2{margin-top:.6em}
+.go{margin-top:46px;appearance:none;border:1px solid var(--gold);background:transparent;color:var(--gold2);font-family:var(--jp);font-weight:700;font-size:1.05rem;letter-spacing:.2em;padding:18px 40px;border-radius:999px;cursor:pointer;position:relative;overflow:hidden}
+.go::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,220,160,.25),transparent);transform:translateX(-100%);animation:sw 2.6s ease-in-out infinite}
+@keyframes sw{to{transform:translateX(100%)}}
+.go:hover,.go:focus-visible{background:var(--gold);color:var(--ink);outline:none}
+.mute{display:block;margin:18px auto 0;appearance:none;background:none;border:0;color:var(--mute);font-family:var(--ui);font-size:.72rem;letter-spacing:.2em;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.gnote{margin-top:30px;font-family:var(--ui);font-size:.68rem;color:var(--mute);letter-spacing:.08em;line-height:1.8}
+/* end panel */
+.end{position:relative;z-index:5;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:0;padding-block:16vh 18vh;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));background:linear-gradient(rgba(4,3,10,0),rgba(4,3,10,.55) 25%,rgba(4,3,10,.82))}
+.end .k3{line-height:1.2}
+.btn{display:inline-flex;align-items:center;justify-content:center;margin-top:40px;padding:19px 46px;border-radius:999px;background:var(--green);color:#fff;text-decoration:none;font-weight:800;font-size:1.08rem;letter-spacing:.06em;box-shadow:0 0 0 1px rgba(255,255,255,.18),0 10px 44px rgba(6,199,85,.5);transition:transform .2s,background .2s}
+.btn:hover,.btn:focus-visible{background:var(--green2);transform:translateY(-2px);outline:2px solid var(--gold2);outline-offset:3px}
+.note{display:block;font-family:var(--ui);font-size:.72rem;color:var(--mute);margin-top:14px;letter-spacing:.08em}
+.yt{position:relative;margin-top:12vh;width:100%;max-width:760px;aspect-ratio:16/9;border:1px solid var(--gold);background:#000;box-shadow:0 0 60px rgba(230,180,90,.18)}
+.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.cap{font-family:var(--ui);letter-spacing:.38em;text-transform:uppercase;font-size:.68rem;color:var(--gold);margin-top:12vh}
+.cap::before{content:"\00D7\00D7\00D7";color:var(--amsred);margin-right:.9em;letter-spacing:.18em}
+.buy{margin-top:28px}
+.buy p{margin:0;font-size:1rem}
+footer{position:relative;z-index:5;background:#04030a;border-top:1px solid var(--line);padding-block:30px 60px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));font-family:var(--ui);font-size:.72rem;color:var(--mute);line-height:1.9}
+footer .in{max-width:900px;margin:0 auto}
+@media (prefers-reduced-motion:reduce){.sub .ch{transition:none}.prism,.go::before,.hint i{animation:none}}
 </style>
 </head>
 <body>
 
-<canvas id="tun" aria-hidden="true"></canvas><canvas id="gl" aria-hidden="true" style="position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:none"></canvas>
-<div class="veil"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
 <div class="lb t" aria-hidden="true"></div><div class="lb b" aria-hidden="true"></div>
-<div class="prog" aria-hidden="true"></div>
-
+<div class="brandmark" aria-hidden="true">Papillon Science</div>
 <div class="deck">
-<button id="play" type="button" aria-pressed="false" aria-label="自動スクロール再生"><svg viewBox="0 0 16 16"><path id="playIcon" d="M4 2l10 6-10 6z"/></svg><span>Play</span></button>
+<button id="play" type="button" aria-pressed="false" aria-label="自動で進む"><svg viewBox="0 0 16 16"><path id="playIcon" d="M4 2l10 6-10 6z"/></svg><span>Play</span></button>
 <button id="snd" type="button" aria-pressed="false" aria-label="ビートを再生"><span class="bars"><i></i><i></i><i></i></span><span>Beat</span></button>
 </div>
+<div class="prog" aria-hidden="true"></div>
+
+<div class="gate" id="gate">
+<div>
+<h1>Papillon Science</h1>
+<div class="k2">Amsterdam ── Nocturne</div>
+<button class="go" id="go" type="button">体験をはじめる</button>
+<button class="mute" id="silent" type="button">音なしで見る</button>
+<p class="gnote">音が出ます。スクロールすると進みます。<br>強い光や色の変化があります。光に敏感な方はご注意ください。</p>
+</div>
+</div>
+
+<div class="subs" aria-live="polite">
+<div class="sub" data-a=".015" data-b=".10"><span class="xxx">× × ×</span><div class="k1" data-split>Papillon Science</div><div class="k2" data-split>Amsterdam ── Nocturne</div></div>
+<div class="sub" data-a=".17" data-b=".27"><div class="k3" data-split>境界領域の</div></div>
+<div class="sub" data-a=".31" data-b=".41"><div class="k3 prism" data-split>その先へ</div></div>
+<div class="sub" data-a=".50" data-b=".60"><div class="k4" data-split>光は、|速さをまとって</div></div>
+<div class="sub" data-a=".66" data-b=".75"><div class="k3" data-split>没入体験を</div></div>
+<div class="sub" data-a=".79" data-b=".88"><div class="k4" data-split>今すぐ、|あなたに。</div></div>
+</div>
+
+<div class="hint" id="hint">SCROLL<i></i></div>
 
 <main>
-<section class="scene c" data-hue="300" data-mode="7" data-n="6">
-<div class="in shadow">
-<div class="brand" data-zoom>Papillon Science</div>
-<div class="tiny" data-rise style="margin-top:10px">Research for a better tomorrow</div>
-<div class="city" data-rise>Amsterdam ── Nocturne</div>
-<h1 style="margin-top:7vh"><span class="l" data-type>境界領域の</span><br><span class="xl prism" data-zoom>その先へ</span></h1>
-<p class="m" style="margin-top:4vh" data-type>没入体験を|今すぐ|あなたに。</p>
-<p class="body s" data-rise><span class="ph">運河に揺れる灯り、</span><span class="ph">光るマーブル、</span><span class="ph">万華鏡の夜。</span><br><span class="ph">パピヨンサイエンスがつくる</span><span class="ph">縦型の映像作品を、</span><br><span class="ph">公式LINEで</span><span class="ph">お届けします。</span></p>
-<a class="btn" href="#line" data-line data-rise>LINEで友だち追加する</a>
-<span class="note" data-rise>登録無料 ／ いつでもブロックで解除できます</span>
-</div>
-</section>
-
-<section class="scene" data-hue="190" data-mode="4" data-n="4">
-<div class="in shadow">
-<div class="eyebrow" data-rise>Chapter I ─ Grachten</div>
-<p class="l" style="margin-top:28px" data-type>光は、</p>
-<p class="xl gold disp" style="margin:0" data-zoom>speed</p>
-<p class="l" style="margin:0" data-type>をまとって、|奥へ、|奥へ。</p>
-<p class="body s" data-rise><span class="ph">窓のように並ぶネオン、</span><span class="ph">金属の段差、</span><br><span class="ph">反転し続ける万華鏡。</span><br><span class="ph">画面の向こうへ</span><span class="ph">吸い込まれていく、</span><span class="ph">数十秒の旅。</span></p>
-</div>
-</section>
-
-<section class="scene c" data-hue="40" data-mode="8" data-n="8">
-<div class="in shadow">
-<div class="eyebrow" data-rise>Chapter II ─ Tulpen</div>
-<p class="m" style="margin-top:26px" data-type>チューリップが|色を変えるように。</p>
-<p class="xl prism" style="margin:.1em 0" data-zoom>変身する色彩</p>
-<p class="m" data-type>見慣れた景色の|向こうにある、|色と光を|探しに。</p>
-</div>
-</section>
-
-<section class="scene" data-hue="330" data-mode="6" data-n="5">
-<div class="in">
-<div class="eyebrow shadow" data-rise>What you get</div>
-<h2 class="l shadow" style="margin-top:12px" data-type>友だち追加で|届くもの</h2>
-<div class="gets">
-<article class="get g1" data-rise><div class="k">New works</div><h3>新作映像の配信</h3><p>万華鏡・マーブル・光のトンネルなど、オリジナルのサイケデリック映像をお届けします。</p></article>
-<article class="get g2" data-rise><div class="k">First look</div><h3>先行公開</h3><p>SNS で公開する前の作品を、LINEの友だちに先にお見せします。</p></article>
-<article class="get g3" data-rise><div class="k">Behind</div><h3>ブランドの最新情報</h3><p>キャラクターや新しいアイテムなど、パピヨンサイエンスの最新ニュース。</p></article>
-</div>
-</div>
-</section>
-
-<div class="marq" aria-hidden="true"><span>Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · </span><span>Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · </span></div>
-
-<section class="scene" data-hue="150" data-mode="3" data-n="6">
-<div class="in">
-<div class="eyebrow shadow" data-rise>How to</div>
-<h2 class="shadow" style="margin-top:12px"><span class="l" data-type>登録は</span> <span class="xl gold disp" data-zoom>30</span><span class="l" data-type>秒</span></h2>
-<ol class="steps shadow">
-<li data-rise><h3>ボタンをタップ</h3><p>「LINEで友だち追加する」を押します。</p></li>
-<li data-rise><h3>友だち追加</h3><p>LINEアプリが開いたら「追加」をタップします。</p></li>
-<li data-rise><h3>映像が届く</h3><p>新作が公開されるたびに、トークに届きます。</p></li>
-</ol>
-</div>
-</section>
-
-<section class="scene" data-hue="210" data-mode="5" data-n="6" id="movie">
-<div class="in">
-<div class="eyebrow shadow" data-rise>Research Movie</div>
-<h2 class="l shadow" style="margin-top:12px" data-type>研究に関する|参考動画</h2>
-<div class="yt" id="yt" data-rise>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/sqZQmi5E_8s?si=OoOLa6IMI2pwlCYX" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div>
-<div class="buy" data-rise>
-<p class="s">スタディキットはこちらより購入可能</p>
-<a class="btn" style="margin-top:10px" href="#line" data-line>公式LINEで購入のご案内</a>
-</div>
-</div>
-</section>
-
-<section class="scene" data-hue="260" data-mode="5" data-n="4">
-<div class="in">
-<div class="eyebrow shadow" data-rise>FAQ</div>
-<h2 class="l shadow" style="margin-top:12px" data-type>よくある質問</h2>
-<div class="faq">
-<div class="qa" data-rise><details><summary><span><span class="qmark">Q.</span><span class="ph">料金は</span><span class="ph">かかりますか？</span></span></summary><div class="ans"><span class="qmark">A.</span><p data-type="ans">友だち追加と配信の受け取りは無料です。|通信料はお客さまのご負担となります。</p></div></details></div>
-<div class="qa" data-rise><details><summary><span><span class="qmark">Q.</span><span class="ph">配信を</span><span class="ph">やめたいときは？</span></span></summary><div class="ans"><span class="qmark">A.</span><p data-type="ans">LINEのトーク画面からブロックすると、|いつでも配信が止まります。</p></div></details></div>
-<div class="qa" data-rise><details><summary><span><span class="qmark">Q.</span><span class="ph">映像は</span><span class="ph">保存できますか？</span></span></summary><div class="ans"><span class="qmark">A.</span><p data-type="ans">作品の著作権は|パピヨンサイエンスに帰属します。|個人での視聴は|ご自由にお楽しみください。|無断での転載・再配布は|ご遠慮ください。</p></div></details></div>
-<div class="qa" data-rise><details><summary><span><span class="qmark">Q.</span><span class="ph">光の点滅が</span><span class="ph">苦手です</span></span></summary><div class="ans"><span class="qmark">A.</span><p data-type="ans">このページと作品には|強い光や色の変化が含まれます。|光に敏感な方は、|明るい部屋で|画面から離れてご覧いただき、|気分が悪くなった場合は|すぐに視聴をおやめください。</p></div></details></div>
-</div>
-</div>
-</section>
-
-<section class="scene c" data-hue="42" data-mode="7" data-n="6" id="join">
-<div class="in shadow">
-
-<p class="brand" data-zoom>Papillon Science</p>
-<h2 style="margin-top:4vh"><span class="l" data-type>境界領域の</span><br><span class="xl prism" data-zoom>その先へ</span></h2>
-<p class="m" style="margin-top:3vh" data-type>没入体験を|今すぐ|あなたに。</p>
-<a class="btn" href="#line" data-line data-rise>LINEで友だち追加する</a>
-<span class="note" data-rise>登録無料 ／ いつでも解除できます</span>
-</div>
+<div class="track" id="track" aria-hidden="true"></div>
+<section class="end" id="join">
+<div class="k4" style="opacity:.92"><span class="ph">境界領域の</span></div>
+<div class="k3 prism"><span class="ph">その先へ</span></div>
+<div class="k4" style="margin-top:.6em;font-size:clamp(1.1rem,4vw,1.8rem)"><span class="ph">没入体験を</span><span class="ph">今すぐあなたに。</span></div>
+<a class="btn" href="#line" data-line>LINEで友だち追加する</a>
+<span class="note">登録無料 ／ いつでもブロックで解除できます</span>
+<div class="cap">Research Movie</div>
+<div class="yt"><iframe width="560" height="315" src="https://www.youtube.com/embed/sqZQmi5E_8s?si=OoOLa6IMI2pwlCYX" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe></div>
+<div class="buy"><p>スタディキットはこちらより購入可能</p>
+<a class="btn" style="margin-top:14px" href="#line" data-line>公式LINEで購入のご案内</a></div>
 </section>
 </main>
-
-<footer><div class="in">
-<div>© Papillon Science ／ Instagram: @papillonsci ／ papillonscience.com</div>
-<ul>
-<li>掲載の映像・表現は、病気の治療や予防などの効果効能を示すものではありません。</li>
-<li>LINEおよびLINEロゴは、LINEヤフー株式会社の商標または登録商標です。</li>
-</ul>
-</div></footer>
-
-<div class="bar"><a href="#line" data-line>LINEで友だち追加</a></div>
-
+<footer><div class="in">© Papillon Science ／ Instagram @papillonsci<br>掲載の映像・表現は、病気の治療や予防などの効果効能を示すものではありません。LINEおよびLINEロゴは、LINEヤフー株式会社の商標または登録商標です。映像には強い光や色の変化が含まれます。</div></footer>
 <script>
-// 公式LINEの友だち追加URL（例: https://lin.ee/xxxxxxx）をここに設定してください
 const LINE_URL = "https://lin.ee/755vDwv";
-
-document.querySelectorAll('[data-line]').forEach(a=>{ if(LINE_URL){a.href=LINE_URL;a.target="_blank";a.rel="noopener";} });
-
+document.querySelectorAll('[data-line]').forEach(a=>{a.href=LINE_URL;a.target="_blank";a.rel="noopener";});
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const root=document.documentElement;
+const MOBILE=matchMedia('(pointer:coarse)').matches||innerWidth<820;
 
-/* ---------- text reveals ---------- */
-if('IntersectionObserver' in window && !reduce){
-  root.classList.add('js');
-  document.querySelectorAll('[data-type]').forEach(el=>{
-    const txt=el.textContent; el.textContent='';
-    txt.split('|').forEach(part=>{const ph=document.createElement('span');ph.className='ph';
-      [...part].forEach(c=>{const s=document.createElement('span');s.className='ch';s.textContent=c;ph.appendChild(s);});el.appendChild(ph);});
-  });
-  window.typeIt=el=>{
-    if(el.dataset.done)return; el.dataset.done=1; el.classList.add('typing');
-    const chs=[...el.querySelectorAll('.ch')]; let i=0;
-    const step=()=>{ if(i<chs.length){chs[i++].classList.add('on'); if(window.__tick)window.__tick(); setTimeout(step,el.dataset.type==='ans'?28:55+Math.random()*45);} else setTimeout(()=>el.classList.remove('typing'),900); };
-    step();
-  };
-  const io=new IntersectionObserver(es=>es.forEach(e=>{
-    if(!e.isIntersecting)return;
-    const el=e.target, d=[...el.parentNode.children].indexOf(el)*140;
-    setTimeout(()=>{ if(el.hasAttribute('data-type'))typeIt(el); else el.classList.add('on'); },d);
-    io.unobserve(el);
-  }),{threshold:.25});
-  document.querySelectorAll('[data-type]:not([data-type="ans"]),[data-rise],[data-zoom],.bf').forEach(el=>io.observe(el));
-  // safety: reveal everything after 25s even if never observed (thumbnail / odd viewers)
-  setTimeout(()=>document.querySelectorAll('[data-rise],[data-zoom],.bf,[data-type] .ch').forEach(e=>e.classList.add('on')),25000);
-}else{ root.classList.add('nojs'); }
+/* ---------- subtitles: split into characters ---------- */
+document.querySelectorAll('[data-split]').forEach(el=>{
+  const txt=el.textContent; el.textContent=''; let i=0;
+  txt.split('|').forEach((part,pi)=>{ if(pi) el.appendChild(document.createElement('br'));
+    const ph=document.createElement('span'); ph.className='ph';
+    [...part].forEach(c=>{const s=document.createElement('span');s.className='ch';s.style.setProperty('--i',i++);s.textContent=c===' '?' ':c;ph.appendChild(s);});
+    el.appendChild(ph);});
+});
+const subs=[...document.querySelectorAll('.sub')].map(el=>({el,a:+el.dataset.a,b:+el.dataset.b,state:0}));
 
-/* ---------- scenes: letterbox + palette ---------- */
-const scenes=[...document.querySelectorAll('.scene')];
-const lbs=document.querySelectorAll('.lb');
-let target={hue:300,n:6,mode:0}, cur={hue:300}, cinema=false, lbTimer;
-function bars(on){lbs.forEach(b=>b.classList.toggle('on',on));}
-function flashBars(){ if(reduce)return; bars(true); clearTimeout(lbTimer); if(!cinema) lbTimer=setTimeout(()=>bars(false),1700); }
-let active=-1;
-function onScroll(){
-  const mid=innerHeight/2; let best=0;
-  scenes.forEach((s,i)=>{const r=s.getBoundingClientRect(); if(r.top<mid && r.bottom>mid) best=i;});
-  if(best!==active){ active=best; target.hue=+scenes[best].dataset.hue; target.n=+scenes[best].dataset.n; target.mode=+scenes[best].dataset.mode; if(best>0)flashBars(); }
-  const max=document.documentElement.scrollHeight-innerHeight;
-  document.querySelector('.prog').style.width=(max>0?scrollY/max*100:0)+'%';
-  document.querySelector('.bar').classList.toggle('show',scrollY>innerHeight*.6);
-}
-addEventListener('scroll',onScroll,{passive:true}); onScroll();
-// intro: bars drop then lift
-if(!reduce){ bars(true); setTimeout(()=>{ if(!cinema) bars(false); },1800); }
+/* ---------- journey state ---------- */
+const track=document.getElementById('track');
+const LEN=560;                     // metres of canal flown over the whole page
+let P=0,cz=0,drift=0,vel=0,lastY=scrollY,boost=0,auto=false,kickAt=-9,spd=0;
+const target={hue:300};
+const HUES=[[0,300],[.16,190],[.30,40],[.45,330],[.62,150],[.78,260],[.9,42]];
+function progress(){ const h=track.offsetHeight-innerHeight; return h>0?Math.min(1,Math.max(0,scrollY/h)):0; }
 
-/* ---------- tunnel ---------- */
-const c=document.getElementById('tun'),x=c.getContext('2d');
-let W,H,dpr; function rs(){dpr=Math.min(devicePixelRatio||1,1.75);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;} addEventListener('resize',rs); rs();
-const hash=(a,b)=>{const s=Math.sin(a*127.1+b*311.7)*43758.5453;return s-Math.floor(s)};
-let z=0,zT=0,last=performance.now(),lastY=scrollY,vel=0,N=6,Nfrom=6,Nmix=1,boost=0;
-window.__tick=()=>{boost=Math.min(boost+.06,1)};
-function drawLayer(t,n,alpha,rot,zz,hueBase){
-  const cols=3,seg=n*cols*2,cell=Math.PI*2/seg;
-  const cx=W/2+Math.sin(t*.7)*W*.025,cy=H/2+Math.sin(t*.5)*H*.02;
-  const maxR=Math.hypot(W,H)*.6;
-  for(let i=-2;i<60;i++){
-    const v=i+(zz%1), r0=5*Math.exp(v*cell), r1=5*Math.exp((v+1)*cell);
-    if(r0>maxR)break; if(r1<3)continue;
-    const iv=i-Math.floor(zz), dep=Math.min(1,Math.pow(r0/maxR*2.6,1.2)), th=r1-r0;
-    for(let s=0;s<seg;s++){
-      const f=s%(cols*2),u=f<cols?f:cols*2-1-f, hh=hash(u+3,iv), h2=hash(u+11,iv*1.7+5);
-      const a0=s*cell+rot,a1=a0+cell, ins=.17;
-      const ri0=r0+th*ins,ri1=r1-th*ins,ai0=a0+cell*ins,ai1=a1-cell*ins;
-      const hue=(hueBase+hh*70-35+360)%360, lit=h2>.27, fl=.6+.4*Math.sin(t*(.7+2*h2)+hh*40);
-      // metal ledge (lit edge toward viewer)
-      x.beginPath();x.arc(cx,cy,r1,a0,a1);x.arc(cx,cy,r1-th*.1,a1,a0,true);x.closePath();
-      x.fillStyle=`rgba(255,214,150,${.22*dep*alpha})`;x.fill();
-      x.beginPath();x.arc(cx,cy,ri1,ai0,ai1);x.arc(cx,cy,ri0,ai1,ai0,true);x.closePath();
-      if(lit){x.fillStyle=hh>.84?`rgba(255,192,96,${.62*fl*dep*alpha})`:`hsla(${hue},96%,${52+boost*10}%,${.55*fl*dep*alpha})`;x.fill();}
-      x.strokeStyle=`hsla(${(hue+30)%360},100%,72%,${.6*dep*alpha})`;x.lineWidth=Math.max(.6,th*.045);x.stroke();
-    }
-  }
-  const g=x.createRadialGradient(cx,cy,0,cx,cy,maxR*.22);
-  g.addColorStop(0,`hsla(${hueBase},100%,88%,${.6*alpha})`);g.addColorStop(1,'hsla(0,0%,100%,0)');
-  x.fillStyle=g;x.fillRect(0,0,W,H);
-}
-
-/* ---------- WebGL scenes (original shaders inspired by: checker warp tunnel, rainbow dot spiral, glass-bead kaleidoscope, hyperspace streaks) ---------- */
+/* ---------- WebGL raymarched world ---------- */
 const FS=`precision highp float;
-uniform vec2 res;uniform float t,z,hue,mx,nA,nB,gold,vel,melt,club,pulse;uniform float mA,mB;
-#define TAU 6.2831853
-#define PI 3.1415927
-vec3 pal(float h){return pow(0.5+0.5*cos(TAU*(h+vec3(0.,.33,.67))),vec3(1.2));}
+uniform vec2 res;uniform float t,cz,P,spd,pulse,hue;
+#define PI 3.14159265
 float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float PS;
-float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
- return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
-float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*vn(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return s;}
-vec3 sMarble(vec2 p){
- vec2 q=p*1.3+vec2(0.,z*.06);
- float w=fbm(q+t*.05),w2=fbm(q*1.6+w*2.4-t*.04+vec2(3.1,1.7));
- float v=sin((q.x*.8+q.y)*3.2+w2*8.+z*.2);
- float vein=pow(1.-abs(v),14.),vein2=pow(1.-abs(sin(w*18.+t*.3)),40.);
- vec3 base=pal(w2*.7+hue/360.+.05*sin(t*.2))*(.25+.55*w2);
- base=mix(base,vec3(.02,.02,.05),.35*smoothstep(.55,.75,w));
- return base+vec3(1.,.78,.4)*(vein*1.3+vein2*.6)+pal(w+.5)*pow(w2,6.)*1.2;
+float h11(float n){return fract(sin(n*12.9898+4.1)*43758.5453);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vn(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return s;}
+vec3 pal(float h){return pow(.5+.5*cos(6.2831*(h+vec3(0.,.33,.67))),vec3(1.2));}
+float sm(float a,float b,float x){return smoothstep(a,b,x);}
+float FOLD,PSY,MARB,CLUB,RISE;
+vec3 kfold(vec3 p){
+  if(FOLD<.001)return p;
+  vec2 q=p.xy-vec2(0.,2.2); float r=length(q), a=atan(q.y,q.x)+t*.12*FOLD+p.z*.01*FOLD;
+  float N=6.,s=2.*PI/N; float af=abs(mod(a+s*.5,s)-s*.5);
+  vec3 k=vec3(cos(af)*r, sin(af)*r*1.6+.6, p.z);
+  return mix(p,k,FOLD);
 }
-vec2 rot2(vec2 v,float a){float c=cos(a),s=sin(a);return vec2(c*v.x-s*v.y,s*v.x+c*v.y);}
-float beamI(vec2 p,vec2 o,float th,float w0,float spread,out float al){
- vec2 d=vec2(sin(th),-cos(th));vec2 rel=p-o;al=dot(rel,d);float pe=abs(rel.x*d.y-rel.y*d.x);
- if(al<0.)return 0.;
- float w=w0+spread*al;
- return (exp(-pow(pe/(w*.18),2.))*1.3+exp(-pow(pe/w,2.))*.45)/(1.+al*.6);
+float bld(vec3 q,out float id,out float top,out float lz){
+  float ax=abs(q.x), side=step(0.,q.x);
+  float zid=floor(q.z/2.6); lz=q.z-zid*2.6-1.3;
+  id=h11(zid*1.37+side*17.31);
+  float h=3.2+3.8*id, gt=floor(h11(zid*7.1+side*3.)*3.), c=abs(lz), g;
+  if(gt<.5) g=.95*floor(max(0.,1.-c/1.2)*4.)/4.;
+  else if(gt<1.5) g=.95*sqrt(max(0.,1.-pow(c/1.15,2.)));
+  else g=max(0.,1.-c*.82);
+  top=h+g;
+  float d=max(3.-ax,q.y-top);
+  d=max(d,c-1.27);
+  return d;
 }
-vec3 beams(vec2 p,float k){
- if(k<.02)return vec3(0.);
- vec3 c=vec3(0.);
- float T=t*(1.+vel*.4);
- float ph=T/5.5, mode=mod(floor(ph),4.), mfr=smoothstep(.0,.25,fract(ph));
- float pm=mod(floor(ph)-1.,4.);
- float haze=.55+.45*vn(p*3.+vec2(0.,-t*.25))*vn(p*1.3+vec2(t*.1,0.));
- vec2 tgt=vec2(sin(T*.7)*.35,sin(T*.53)*.5);
- // 1) moving heads: 6 top + 4 bottom, choreographed
- for(int i=0;i<10;i++){
-  float fi=float(i); bool top=i<6;
-  float xi=top?(fi/5.-.5)*1.5:((fi-6.)/3.-.5)*1.3;
-  vec2 o=vec2(xi,top?1.08:-1.08);
-  float base=top?0.:3.14159;
-  float sgn=mod(fi,2.)<.5?1.:-1.;
-  // four choreographies
-  float a0=base+sin(T*.9)*.55+(xi)*.25;                         // fan sweep
-  float a1=base+sgn*(.35+.35*sin(T*1.3));                       // scissors
-  vec2 dv=tgt-o; float a2=atan(dv.x,-dv.y)*(top?1.:1.)+(top?0.:0.); if(!top)a2=atan(-dv.x,dv.y)+3.14159; // converge
-  float a3=base+sin(T*.6+fi*.9)*.4;                              // chase base
-  float A0=mode<.5?a0:(mode<1.5?a1:(mode<2.5?a2:a3));
-  float A1=pm<.5?a0:(pm<1.5?a1:(pm<2.5?a2:a3));
-  float th=mix(A1,A0,mfr);
-  float chase=mode>2.5?step(.55,fract(T*1.6-fi*.1)):1.;
-  float al;float I=beamI(p,o,th,.004,.06,al)*chase*(.65+.35*pulse);
-  float hue_=fract(hue/360.+floor(ph)*.21+(top?0.:.5)+fi*.015);
-  c+=pal(hue_)*I*haze*1.25;
- }
- // 2) laser fan from top centre (alternate phrases)
- float lz=step(.5,mod(floor(ph),2.))*(.6+.4*pulse);
- if(lz>0.){
-  vec2 o=vec2(0.,1.15); float sweep=sin(T*.8)*.5;
-  vec3 lc=mix(vec3(.2,1.,.45),vec3(.3,.8,1.),.5+.5*sin(T*.3));
-  for(int j=0;j<20;j++){
-   float fj=float(j);
-   float th=sweep+(fj/19.-.5)*1.7;
-   vec2 d=vec2(sin(th),-cos(th));vec2 rel=p-o;float al=dot(rel,d);float pe=abs(rel.x*d.y-rel.y*d.x);
-   if(al>0.) c+=lc*(exp(-pow(pe/.0016,2.))*1.4+exp(-pow(pe/.012,2.))*.12)*lz*haze;
+float brg(vec3 q){
+  float bz=mod(q.z,36.)-18.;
+  float d=max(abs(bz)-.8,q.y-3.);
+  d=max(d,-(length(vec2(q.x/1.3,q.y+.25))-2.35));
+  d=max(d,abs(q.x)-3.4);
+  return d;
+}
+float map(vec3 p,out float mat){
+  vec3 q=kfold(p); float id,top,lz;
+  float a=bld(q,id,top,lz);
+  float b=brg(q)+FOLD*50.;
+  mat=a<b?1.:2.;
+  return min(a,b);
+}
+float mapD(vec3 p){float m;return map(p,m);}
+vec3 nrm(vec3 p){vec2 e=vec2(.004,-.004);return normalize(e.xyy*mapD(p+e.xyy)+e.yyx*mapD(p+e.yyx)+e.yxy*mapD(p+e.yxy)+e.xxx*mapD(p+e.xxx));}
+float GLOW;
+float trace(vec3 ro,vec3 rd,float maxT,out float mat){
+  float tt=.05; mat=0.;
+  for(int i=0;i<90;i++){
+    vec3 p=ro+rd*tt; float m; float d=map(p,m);
+    // bulb glow along bridge arches (canal space)
+    if(FOLD<.5){ vec3 q=p; float bz=mod(q.z,36.)-18.; vec2 v=vec2(q.x/1.3,q.y+.25);
+      float an=atan(v.y,v.x); float an2=(floor(an/(PI/12.))+.5)*(PI/12.);
+      vec2 bp=vec2(cos(an2),sin(an2))*2.47; float db=length(vec3((v.x-bp.x)*1.3,v.y-bp.y,bz+.85));
+      GLOW+=exp(-db*14.)*.06*step(0.,v.y);}
+    if(d<.0015*tt){mat=m;return tt;}
+    tt+=d*.72; if(tt>maxT)break;
   }
- }
- // 3) mirror ball spots drifting across the haze
- vec2 mq=rot2(p,T*.12)*7.;mq.y+=T*.35;
- vec2 mi=floor(mq),mf=fract(mq)-.5;float mh=hs(mi);
- float spot=exp(-dot(mf,mf)*140.)*step(.55,mh)*(.5+.5*sin(T*4.+mh*50.));
- c+=mix(vec3(1.,.95,.9),pal(mh+t*.05),.35)*spot*.55;
- // 4) roaming light sources with cross flare
- for(int j=0;j<8;j++){
-  float fj=float(j);
-  vec2 lp=vec2(sin(T*(.21+.05*fj)+fj*2.1)*.55,sin(T*(.17+.04*fj)+fj*1.3)*.95);
-  vec2 dd=p-lp; float r2=dot(dd,dd); float tw=.5+.5*sin(T*3.+fj*4.);
-  vec3 col=pal(fj*.13+t*.05);
-  c+=col*(exp(-r2*2500.)*2.+exp(-r2*90.)*.15)*tw;
-  c+=col*(exp(-pow(dd.x*90.,2.))*exp(-abs(dd.y)*30.)+exp(-pow(dd.y*90.,2.))*exp(-abs(dd.x)*30.))*.45*tw;
- }
- // 5) floor haze glow + gentle beat pulse (kept low for photosensitive safety)
- c+=pal(hue/360.+floor(ph)*.21)*exp(-pow((p.y+1.)/.35,2.))*.25*(.7+.3*pulse);
- c+=vec3(1.)*pulse*.05;
- return c*k;
+  return -1.;
 }
-vec3 fadeC(vec3 c,float cp,vec3 avg){return mix(avg,c,clamp((cp-1.5)/5.,0.,1.));}
-vec3 sWin(float r,float a,float N){
- float cols=3.,cell=PI/(N*cols);
- float w=abs(mod(a,TAU/N)-PI/N);
- vec2 uv=vec2(w/cell,log(r)/cell-z*.6);vec2 id=floor(uv),f=fract(uv)-.5;
- float h1=hs(id+3.),h2=hs(id*vec2(1.,1.7)+11.);
- float cp=r*cell*PS,aa=clamp(1./cp,.002,.6);
- float box=max(abs(f.x),abs(f.y));
- float lit=step(.27,h2),fl=.6+.4*sin(t*(.7+2.*h2)+h1*40.);
- float win=smoothstep(.28+aa,.28-aa,box)*lit*fl;
- float fr=smoothstep(.41+aa,.41-aa,box)-smoothstep(.35+aa,.35-aa,box);
- vec3 wc=h1>.82?vec3(1.,.72,.3):pal(hue/360.+.22*h1);
- vec3 c=wc*win*(.55+.9*clamp(.5-f.y,0.,1.))*1.6+pal(hue/360.+.15+.5*step(.6,h2))*fr*1.6;
- float ledge=step(f.y,-.4),spec=pow(.5+.5*cos(f.x*9.+h1*6.+t*1.3+id.y*.7),14.)*step(.42,box);
- c+=vec3(1.,.82,.5)*(ledge*1.2+spec*.9)*(.4+.6*h1);
- c*=1.-.8*step(.4,f.y)-.5*step(.4,abs(f.x));
- return fadeC(c,cp,pal(hue/360.)*.2);
-}
-vec3 sChk(vec2 p,float r,float a){
- float Nc=18.,k=.85,v=k/r-z*1.1;
- float u=a*Nc/TAU+.9*sin(t*.35)*log(r)+.35*sin(v*.6+t*1.4);
- float du=Nc/(TAU*r*PS),dv=k/(r*r*PS);
- float s=sin(PI*u)*sin(PI*v)/(PI*length(vec2(du,dv))+1e-6);
- float m=clamp(s,-1.,1.)*.5+.5; m=mix(.5,m,clamp((1./max(du,dv)-1.5)/5.,0.,1.));
- float h=fract(hue/360.+t*.03);
- vec3 c=mix(pal(h+.5)*.05,pal(h)*1.15+.15,m);
- c+=pow(max(cos(v*PI*.5+u*.3),0.),8.)*.25;
- float yc=.06*sin(p.x*3.2+t*2.1)+.02*sin(p.x*7.-t*1.3),d=abs(p.y-yc);
- c+=(exp(-pow(d/.01,2.))*1.6+exp(-pow(d/.05,2.))*.45)*(pal(p.x*.6+t*.25)*.7+.5);
- c+=exp(-pow((r-.055)/.02,2.))*pal(a/TAU*2.+t*.3)*1.4;
- return c;
-}
-vec3 sDots(float r,float a){
- float Nd=40.,a2=a+.55*sin(log(r)*2.4-t*1.9);
- vec2 uv=vec2(a2*Nd/TAU,log(r)*Nd/TAU-z*1.6);vec2 id=floor(uv),f=fract(uv)-.5;
- float d=length(f),cp=r*PS*TAU/Nd;
- float m=clamp((.3-d)*cp+.5,0.,1.),core=clamp((.12-d)*cp+.5,0.,1.);
- float hu=fract(a2/TAU*2.+log(r)*.35-t*.25+hue/360.);
- float tw=.65+.35*sin(t*3.+hs(id)*30.);
- vec3 c=pal(hu)*m*tw*1.5+core*.5;
- return fadeC(c,cp,pal(hu)*.22);
-}
-vec3 sBeads(float r,float a){
- float N=8.,cols=2.,cell=PI/(N*cols);
- float w=abs(mod(a+t*.08,TAU/N)-PI/N);
- vec2 uv=vec2(w/cell,log(r)/cell-z*.9);vec2 id=floor(uv),f=fract(uv)-.5;
- float h=hs(id+2.),rad=.3+.14*h,d=length(f),q=clamp(d/rad,0.,1.),cp=r*PS*cell;
- float ins=clamp((rad-d)*cp+.5,0.,1.),nz=sqrt(max(1.-q*q,0.));
- vec2 fr=f/rad;
- float spec=exp(-dot(fr+.35,fr+.35)/.02)*2.2+exp(-dot(fr-.3,fr-.3)/.05)*.35;
- vec3 base=pal(h*.9+t*.05+log(r)*.1+hue/360.);
- vec3 c=(base*(.15+.85*nz)*1.2+pal(h+.35)*pow(1.-nz,3.)*1.1+spec)*ins+(1.-ins)*vec3(.06,.045,.02);
- return fadeC(c,cp,base*.25);
-}
-vec3 sWarp(float r,float a){
- float M=260.,q=a*M/TAU,ia=floor(q),fa=fract(q)-.5;
- float h=hs(vec2(ia,7.)),h2=hs(vec2(ia,3.));
- float ap=r*PS*TAU/M,mang=exp(-pow(fa*ap/(.8+1.6*h2),2.));
- float seg=fract(log(r)*1.3-z*(.5+h)*1.4+h*13.),L=.25+.35*h2;
- float mr=pow(clamp(seg/L,0.,1.)*step(seg,L),2.);
- vec3 col=mix(pal(h+t*.05),vec3(1.,.75,.35),gold);
- return col*mang*mr*(.4+1.6*clamp(r*1.5,0.,1.))*2.2;
-}
-
-float h1(float x){return fract(sin(x*127.1+.37)*43758.5453);}
-float bx(float x,float a,float b,float pw){return smoothstep(a-pw,a+pw,x)-smoothstep(b-pw,b+pw,x);}
-vec4 houses(vec2 q,float L,float pw){
- float w=.27,i=floor(q.x/w),u=fract(q.x/w);
- float hh=h1(i+L*17.),H=.42+.42*hh,g=floor(h1(i*3.1+L*5.)*3.),c=abs(u-.5)*2.,gh=.13;
- float top=g<.5?H+gh*floor((1.-c)*4.)/4.*step(c,.82):(g<1.5?H+gh*sqrt(max(0.,1.-c*c*1.4)):H+gh*max(0.,1.-c*1.15));
- float ins=smoothstep(top+pw,top-pw,q.y)*step(0.,q.y)*bx(u,.025,.975,pw*3.7);
- vec3 tone=mix(vec3(.26,.11,.07),vec3(.07,.10,.17),h1(i*7.+L));
- tone=mix(tone,vec3(.05,.13,.10),step(.72,h1(i*11.+L)));
- tone*=.55+.6*smoothstep(H+gh,0.,q.y)*(.8+.2*sin(t*.3+i));
- float fl=.1,row=floor(q.y/fl),col=floor(u*3.);vec2 f=vec2(fract(u*3.),fract(q.y/fl));
- float inWin=bx(f.x,.27,.73,pw*11.)*bx(f.y,.18,.84,pw*10.)*step(q.y,H-.03)*step(.05,q.y);
- float trim=(bx(f.x,.22,.78,pw*11.)*bx(f.y,.13,.89,pw*10.)-inWin)*step(q.y,H-.03)*step(.05,q.y);
- float lid=hs(vec2(i*3.+col,row+L*9.));
- float lit=step(.32,lid)*(.75+.25*sin(t*.6+lid*30.));
- vec3 wc=lid>.86?pal(hue/360.+lid*2.+t*.05)*1.3:mix(vec3(1.,.62,.25),vec3(1.,.8,.5),lid);
- vec3 c3=tone+vec3(.85,.82,.76)*trim*.55+wc*inWin*lit*1.5+vec3(.01,.012,.02)*inWin*(1.-lit);
- // hoist beam & gable window
- float gw=bx(u,.44,.56,pw*3.7)*bx(q.y,H+.02,H+.07,pw)*step(.5,h1(i*5.+L));
- c3+=vec3(1.,.7,.3)*gw*1.2;
- return vec4(c3,ins);
-}
-vec3 skyN(vec2 p,float hz){
- vec3 c=mix(vec3(.05,.02,.10),vec3(.006,.004,.025),clamp((p.y-hz)*1.1,0.,1.));
- c+=pal(hue/360.+.55+p.x*.1)*.12*exp(-pow((p.y-hz-.75-.08*sin(p.x*2.+t*.3))/.12,2.));
- vec2 sp=floor(p*90.);float st=hs(sp);c+=step(.996,st)*(.5+.5*sin(t*2.+st*90.))*.9;
- return c;
-}
-vec3 bridge(vec2 q,float hz,float pw,inout float m){
- float X=q.x/1.9, bxp=(fract(X)-.5)*1.9;
- float ay=hz+.2*sqrt(max(0.,1.-pow(bxp/.48,2.)));
- float arch=step(abs(bxp),.5)*smoothstep(.022+pw,.022-pw,abs(q.y-ay-.01));
- float deck=step(abs(bxp),.62)*bx(q.y,hz+.2,hz+.245,pw);
- float rail=step(abs(bxp),.62)*bx(q.y,hz+.27,hz+.278,pw);
- m=max(m,max(arch,deck));
- vec3 c=vec3(.035,.03,.04)*max(arch,deck)+vec3(.5,.45,.4)*rail*.4;
- for(int k=0;k<11;k++){float bxk=-.47+.094*float(k);float by=hz+.2*sqrt(max(0.,1.-pow(bxk/.48,2.)))+.035;
-  vec2 d=vec2(bxp-bxk,q.y-by);float r2=dot(d,d);c+=vec3(1.,.78,.42)*(exp(-r2*9000.)*2.5+exp(-r2*500.)*.25);}
- return c;
-}
-vec3 sCanal(vec2 p){
- float hz=-.3,pw=1.2/PS;
- bool wat=p.y<hz; vec2 q=p; float dd=hz-p.y;
- if(wat){q.y=hz+dd*1.05;q.x+=sin(p.y*60.+t*1.8)*.0028*(1.+dd*4.)+sin(p.y*23.-t*.9+p.x*2.)*.0035;}
- vec3 c=skyN(q,hz);
- vec4 far=houses(vec2(q.x*1.7+z*.09+7.,(q.y-hz-.05)*1.7),1.,pw*1.7);
- c=mix(c,far.rgb*.55+vec3(.0,.0,.02),far.a);
- vec4 nr=houses(vec2(q.x+z*.22,(q.y-hz-.03)),0.,pw);
- c=mix(c,nr.rgb,nr.a);
- float bm=0.; vec3 br=bridge(vec2(q.x+z*.22+.3,q.y),hz,pw,bm);
- c=mix(c,br,bm)+br*(1.-bm);
- // quay edge
- c=mix(c,vec3(.04,.035,.035),bx(q.y,hz,hz+.03,pw));
- if(wat){
-  c=c*vec3(.42,.5,.72)*(.9-.4*clamp(dd*1.8,0.,1.));
-  float sh=pow(max(0.,sin(p.y*140.+sin(p.x*12.+t)*2.+t*3.)),22.);
-  c+=sh*pal(p.x*.4+t*.06+hue/360.)*.16*(1.-clamp(dd*1.5,0.,1.));
- }
- return c;
-}
-float wmMask(vec2 p,vec2 base,float s,float ang,float pw){
- vec2 q=(p-base)/s; float e=pw/s;
- float bw=mix(.2,.11,clamp(q.y/.74,0.,1.));
- float m=step(0.,q.y)*smoothstep(.74+e,.74-e,q.y)*smoothstep(bw+e,bw-e,abs(q.x));
- m=max(m,bx(q.y,.29,.31,e)*step(abs(q.x),.29));
- m=max(m,(bx(q.y,.355,.365,e)+step(abs(fract(q.x*22.)-.5),.1)*bx(q.y,.31,.36,e))*step(abs(q.x),.29));
- m=max(m,step(length(vec2(q.x/1.05,(q.y-.74)*1.5)),.14)*step(.73,q.y));
- vec2 h=q-vec2(0.,.81);
- for(int k=0;k<4;k++){
-  vec2 sv=rot2(h,-(ang+float(k)*1.5708));
-  float al=sv.x, ac=sv.y;
-  float stock=step(0.,al)*step(al,.74)*step(abs(ac),.013);
-  float inF=step(.14,al)*step(al,.74)*step(.013,ac)*step(ac,.115);
-  float lat=max(step(fract(al*17.),.16),max(step(abs(ac-.115),.008),step(abs(ac-.064),.005)));
-  m=max(m,max(stock,inF*lat));
- }
- m=max(m,step(length(h),.03));
- return clamp(m,0.,1.);
-}
-vec3 skyDusk(vec2 p,float hz,vec2 sun){
- float k=clamp((p.y-hz)/1.,0.,1.);
- vec3 c=mix(vec3(1.,.55,.32),vec3(.62,.22,.36),smoothstep(0.,.25,k));
- c=mix(c,vec3(.18,.07,.24),smoothstep(.2,.65,k));
- c=mix(c,vec3(.03,.02,.08),smoothstep(.6,1.,k));
- c=mix(c,c*(.8+.4*pal(hue/360.+.6)),.25);
- vec2 cq=vec2(p.x*1.2+t*.012,(p.y-hz)*4.2);
- float cl=fbm(cq+vec2(0.,t*.01)),cl2=fbm(cq*1.9+5.);
- float band=smoothstep(.45,.7,cl)*smoothstep(.95,.15,k);
- float sd=length(p-sun);
- vec3 lit=mix(vec3(.95,.5,.45),vec3(1.,.78,.45),exp(-sd*2.5));
- vec3 shade=vec3(.22,.08,.18);
- c=mix(c,mix(shade,lit,smoothstep(.35,.75,cl2)),band*.85);
- c+=vec3(1.,.72,.42)*exp(-sd*sd*25.)*.55+vec3(1.,.9,.7)*smoothstep(.05,.035,sd)*1.4;
- float ang=atan(p.y-sun.y,p.x-sun.x);
- float rays=pow(vn(vec2(ang*9.,t*.08)),3.)*exp(-sd*1.6)*step(hz,p.y);
- c+=vec3(1.,.7,.45)*rays*.35;
- return c;
-}
-vec3 sTulip(vec2 p){
- float hz=.02,pw=1.2/PS; vec2 sun=vec2(-.28,hz+.1);
- vec3 fogc=vec3(.95,.55,.42);
- if(p.y>hz){
-  vec3 c=skyDusk(p,hz,sun);
-  // distant windmills in haze
-  float m2=wmMask(p,vec2(-.62,hz),.16,t*.35+1.,pw);
-  float m3=wmMask(p,vec2(.05,hz),.11,t*.42+2.,pw);
-  c=mix(c,mix(vec3(.25,.1,.16),fogc,.55),max(m2,m3)*.9);
-  // hero windmill with rim light from the sun
-  vec2 B=vec2(.42,hz-.005); float S=.42, A=t*.45+z*.06;
-  float m=wmMask(p,B,S,A,pw);
-  float mr=wmMask(p+normalize(sun-p)*.006,B,S,A,pw);
-  vec3 body=vec3(.035,.02,.035);
-  c=mix(c,body,m);
-  c+=vec3(1.,.62,.35)*clamp(m-mr,0.,1.)*1.4;
-  // tiny lit window on the mill
-  vec2 wq=(p-B)/S; c+=vec3(1.,.75,.4)*bx(wq.x,-.02,.02,pw/S)*bx(wq.y,.45,.52,pw/S)*1.5;
-  // floating gold dust
-  vec2 gq=p*14.+vec2(t*.3,-t*.5); vec2 gi=floor(gq),gf=fract(gq)-.5; float gh=hs(gi);
-  c+=vec3(1.,.8,.5)*exp(-dot(gf,gf)*220.)*step(.82,gh)*(.5+.5*sin(t*3.+gh*40.))*.8;
+vec3 sky(vec3 rd){
+  float y=rd.y;
+  vec3 c=mix(vec3(.05,.025,.10),vec3(.006,.004,.02),sm(-.05,.6,y));
+  c+=pal(hue/360.+.55+rd.x*.2)*.16*PSY*exp(-pow((y-.25-.06*sin(rd.x*4.+t*.3))/.1,2.));
+  vec2 sp=floor(rd.xy/max(.02,1.+rd.z)*260.);float st=hs(sp);c+=step(.995,st)*(.5+.5*sin(t*2.+st*90.))*.8*sm(0.,.2,y);
+  // dawn at the finale
+  vec3 dawn=mix(vec3(1.,.62,.32),vec3(.35,.12,.30),sm(-.05,.45,y));
+  c=mix(c,dawn,RISE*.9);
+  c+=vec3(1.,.8,.5)*exp(-pow(length(rd-normalize(vec3(0.,.05,1.))),2.)*18.)*RISE*1.2;
   return c;
- }
- float d=hz-p.y,zz=.3/d,u=p.x*zz,v=zz+z*1.4;
- float rw=u*20., rowi=floor(rw), cx=fract(rw);
- float isDitch=step(abs(rowi+.5),.6)*step(mod(floor((rowi+40.)/14.),1.),.5)*0.+step(abs(rowi),.5)+step(abs(rowi-7.),.5)+step(abs(rowi+8.),.5);
- vec3 TP[5];
- vec3 tc;
- float pick=fract(rowi*.618+.2);
- tc=pick<.2?vec3(.82,.06,.12):pick<.4?vec3(1.,.42,.62):pick<.6?vec3(1.,.95,.88):pick<.8?vec3(1.,.78,.18):vec3(.5,.12,.62);
- tc=mix(tc,tc*pal(hue/360.+rowi*.07),.25);
- vec2 cell=vec2(cx,fract(v*11.));
- float cp=PS*d*d/.3/11.;
- vec2 cq=(cell-vec2(.5,.45))*vec2(1.,1.25);
- float cup=smoothstep(.38,.35,length(cq*vec2(1.,.9)))*step(cq.y,.12);
- float petal=smoothstep(.06,.0,abs(cq.x)-.12)*step(.04,cq.y)*step(cq.y,.2)*step(abs(cq.x),.26)*step(.08,abs(abs(cq.x)-.13)+.0);
- float head=clamp(max(cup,petal*.0+cup),0.,1.);
- float hl=exp(-dot(cq-vec2(-.08,-.06),cq-vec2(-.08,-.06))*90.);
- float stem=step(abs(cell.x-.5),.03)*step(cell.y,.4);
- float rowmask=smoothstep(.02,.07,cx)*smoothstep(.98,.93,cx);
- vec3 leaf=vec3(.03,.11,.05);
- vec3 c=mix(vec3(.05,.035,.03),leaf,rowmask);
- c=mix(c,leaf*1.4,stem*rowmask);
- vec3 lit=tc*(.65+.5*smoothstep(.3,-.2,cq.x+cq.y))+vec3(1.,.9,.8)*hl*.5;
- c=mix(c,lit,head*rowmask);
- float aa=clamp(cp/4.,0.,1.);
- c=mix(mix(leaf*.8,tc*.55,.6),c,aa);
- // polder ditch reflecting the dusk sky
- vec3 refl=skyDusk(vec2(p.x+sin(p.y*120.+t*2.)*.002,hz+d*1.1),hz,sun)*vec3(.7,.72,.85);
- c=mix(c,refl,isDitch*smoothstep(.0,.08,cx)*smoothstep(1.,.92,cx));
- // warm sun glint on field + atmospheric fog
- c+=vec3(1.,.6,.4)*exp(-pow((p.x-sun.x)*3.,2.))*exp(-d*10.)*.25;
- c=mix(c,fogc*.85,exp(-d*11.)*.9);
- return c;
 }
-vec3 scene(float m,vec2 p,float r,float a,float N){
- if(m>7.5)return sTulip(p);
- if(m>6.5)return sCanal(p);
- if(m>5.5)return sDots(r,a)*.35;
- if(m>4.5)return sMarble(p);
- if(m<.5)return sWin(r,a,N);
- if(m<1.5)return sChk(p,r,a);
- if(m<2.5)return sDots(r,a);
- if(m<3.5)return sBeads(r,a);
- return sWarp(r,a);
+vec3 marble(vec2 q){
+  float w=fbm(q*.7+t*.03),w2=fbm(q*1.2+w*2.4);
+  float v=pow(1.-abs(sin((q.x+q.y)*1.5+w2*7.)),14.);
+  return mix(vec3(.05,.04,.06),pal(w2*.6+hue/360.)*.45,w2)+vec3(1.,.78,.4)*v*1.4;
+}
+vec3 shade(vec3 p,vec3 rd,float mat,float tt){
+  vec3 n=nrm(p); vec3 q=kfold(p); float id,top,lz; bld(q,id,top,lz);
+  vec3 col;
+  if(mat<1.5){
+    float face=sm(.08,.02,abs(abs(q.x)-3.));
+    vec3 tone=mix(vec3(.30,.13,.08),vec3(.08,.11,.19),h11(id*91.));
+    tone=mix(tone,vec3(.06,.15,.11),step(.75,h11(id*37.)));
+    float u=(lz+1.25)/2.5*3., fx=fract(u), fy=fract(q.y/1.05), row=floor(q.y/1.05), cI=floor(u);
+    float inw=sm(.2,.24,fx)*sm(.8,.76,fx)*sm(.16,.2,fy)*sm(.82,.78,fy)*step(.55,q.y)*step(q.y,top-.55);
+    float trim=(sm(.15,.18,fx)*sm(.85,.82,fx)*sm(.11,.14,fy)*sm(.87,.84,fy))*step(.55,q.y)*step(q.y,top-.55)-inw;
+    float lid=hs(vec2(id*50.+cI,row));
+    float lit=step(.36,lid)*(.8+.2*sin(t*.7+lid*30.));
+    vec3 warm=mix(vec3(1.,.58,.24),vec3(1.,.82,.55),lid);
+    vec3 wc=mix(warm,pal(lid*1.7+hue/360.+t*.05)*1.25,PSY*step(.25,fract(lid*7.)));
+    vec3 base=tone*(.35+.45*sm(top,0.,q.y));
+    base=mix(base,marble(q.zy*.6),MARB);
+    col=base*(.35+.65*max(dot(n,normalize(vec3(.3,.8,-.4))),0.)) + vec3(.9,.86,.8)*max(trim,0.)*.35*face;
+    col+=wc*inw*lit*2.2*face;
+    col+=wc*.08*face*lit;                       // light spill on facade
+    // gable hoist lamp
+    col+=vec3(1.,.72,.35)*exp(-pow(length(vec2(lz,q.y-top+.35))*6.,2.))*face*step(.5,h11(id*13.));
+  } else {
+    col=vec3(.06,.05,.055)*(.4+.6*max(n.y,0.));
+    float bz=mod(q.z,36.)-18.; vec2 v=vec2(q.x/1.3,q.y+.25);
+    float an=atan(v.y,v.x); float an2=(floor(an/(PI/12.))+.5)*(PI/12.); vec2 bp=vec2(cos(an2),sin(an2))*2.47;
+    col+=vec3(1.,.8,.45)*exp(-length(vec2((v.x-bp.x)*1.3,v.y-bp.y))*40.)*2.;
+  }
+  return col;
+}
+vec3 beams(vec2 uv){
+  vec3 c=vec3(0.); float T=t;
+  for(int i=0;i<8;i++){float fi=float(i);
+    vec2 o=vec2((fi/7.-.5)*1.6,1.1);
+    float th=sin(T*(.7+.11*fi)+fi*1.3)*.6+(mod(fi,2.)<.5?.25:-.25)*sin(T*.4);
+    vec2 d=vec2(sin(th),-cos(th));vec2 rel=uv-o;float al=dot(rel,d);float pe=abs(rel.x*d.y-rel.y*d.x);
+    if(al>0.)c+=pal(fi/8.+T*.05+hue/360.)*(exp(-pow(pe/.006,2.))*1.2+exp(-pow(pe/(.02+.07*al),2.))*.3)/(1.+al*.7);}
+  for(int j=0;j<16;j++){float fj=float(j);
+    float th=sin(T*.9)*.5+(fj/15.-.5)*1.6; vec2 d=vec2(sin(th),-cos(th)); vec2 rel=uv-vec2(0.,1.15);
+    float al=dot(rel,d),pe=abs(rel.x*d.y-rel.y*d.x);
+    if(al>0.)c+=vec3(.25,1.,.55)*exp(-pow(pe/.0018,2.))*.9*step(.5,fract(T*.18));}
+  return c*(.6+.4*pulse);
 }
 void main(){
- PS=res.y*.5;
- vec2 p=(gl_FragCoord.xy-res*.5)/PS;
- p-=vec2(.04*sin(t*.8),.03*sin(t*.57+1.));
- vec2 p0=p;
- p+=melt*.22*vec2(fbm(p*2.+t*.08)-.5,fbm(p*2.+vec2(5.2,1.3)-t*.08)-.5);
- float r=length(p)+1e-4,a=atan(p.y,p.x)+t*.008+z*.025;
- vec3 c=scene(mB,p,r,a,nB);
- if(mx<.999)c=mix(scene(mA,p,r,a,nA),c,mx);
- float tun=1.-step(6.5,mB)*mx-(mx<.999?step(6.5,mA)*(1.-mx):0.);
- tun=clamp(tun,0.,1.);
- c*=mix(1.,pow(clamp(r*2.3,.1,1.1),1.15),tun);
- c+=(exp(-r*r*260.)*pal(hue/360.+.1)*1.2+exp(-r*r*1500.)*1.2)*tun;
- // marble bleeding in as you go deeper
- c=mix(c,c*.6+sMarble(p0)*.55,smoothstep(.35,1.,melt)*.45*step(mB,4.6));
- c+=beams(p0,club);
- c=pow(max(c,0.),vec3(1.25));
- c=c/(1.+c*.55)*1.25;
- c*=1.-.55*pow(clamp((r-.35)/1.1,0.,1.),1.3);
- gl_FragColor=vec4(c,1.);
+  vec2 uv=(gl_FragCoord.xy-res*.5)/(res.y*.5);
+  FOLD=sm(.28,.40,P)*(1.-sm(.80,.89,P));
+  PSY=sm(.12,.34,P)*(1.-sm(.9,1.,P)*.6);
+  MARB=sm(.60,.68,P)*(1.-sm(.80,.87,P));
+  CLUB=sm(.42,.48,P)*(1.-sm(.60,.66,P));
+  RISE=sm(.86,1.,P);
+  // camera
+  float roll=sin(cz*.021)*.05+FOLD*sin(t*.2)*.25;
+  vec2 ruv=vec2(cos(roll)*uv.x-sin(roll)*uv.y,sin(roll)*uv.x+cos(roll)*uv.y);
+  vec3 ro=vec3(sin(cz*.031)*.7,1.25+sin(cz*.11)*.12+RISE*10.,cz);
+  vec3 fw=normalize(vec3(cos(cz*.031)*.7*.031*3.,-RISE*.55,1.));
+  vec3 rt=normalize(cross(vec3(0.,1.,0.),fw)),up=cross(fw,rt);
+  float fov=1.05+spd*.25;
+  vec3 rd=normalize(fw*1.6/fov+ruv.x*rt+ruv.y*up);
+  GLOW=0.;
+  float mat; float T1=trace(ro,rd,95.,mat);
+  vec3 col; float dist=T1<0.?95.:T1;
+  // water
+  float W=1.-sm(.2,.5,FOLD);
+  float tw=rd.y<0.?-ro.y/rd.y:1e9;
+  vec3 fogc=mix(vec3(.05,.03,.09),mix(vec3(.12,.03,.14),vec3(.02,.03,.09),MARB),PSY);
+  fogc=mix(fogc,vec3(.6,.32,.26),RISE*.8);
+  if(W>.5 && tw<dist){
+    vec3 wp=ro+rd*tw;
+    vec2 wq=wp.xz;
+    vec3 wn=normalize(vec3(sin(wq.y*3.1+t*1.7)*.03+sin(wq.x*5.+wq.y*1.3-t)*.015+vn(wq*4.+t*.6)*.03-.015,1.,cos(wq.x*2.3+t*1.3)*.02+sin(wq.y*7.-t*2.)*.015));
+    vec3 rr=reflect(rd,wn);
+    float m2; float T2=trace(wp+wn*.02,rr,60.,m2);
+    vec3 rc=T2<0.?sky(rr):shade(wp+rr*T2,rr,m2,T2);
+    if(T2>0.)rc=mix(rc,fogc,1.-exp(-T2*.03));
+    float fr=.35+.65*pow(1.-max(-rd.y,0.),4.);
+    col=rc*vec3(.55,.62,.85)*fr+vec3(.01,.015,.03);
+    dist=tw;
+  } else if(T1>0.){
+    col=shade(ro+rd*T1,rd,mat,T1);
+  } else col=sky(rd);
+  col=mix(col,fogc,1.-exp(-dist*.028));
+  col+=vec3(1.,.78,.45)*GLOW;
+  col+=beams(uv)*CLUB;
+  // speed streak vignette
+  float r=length(uv); col*=1.-.35*sm(.6,1.6,r);
+  col+=pal(hue/360.+r)*sm(.9,1.5,r)*spd*.08;
+  col+=pulse*.03;
+  col=1.-exp(-col*1.25);
+  col=pow(col,vec3(.95));
+  gl_FragColor=vec4(col,1.);
 }`;
-let kickAt=-9,clubv=.2,meltv=0,gl=null,GP,GU={},glc=document.getElementById('gl'),mA=0,mB=0,gmx=1,nA_=6,goldv=0;
+const glc=document.getElementById('gl');
+let gl=null,GU={};
 try{
-  gl=glc.getContext('webgl',{antialias:false,premultipliedAlpha:false,powerPreference:'high-performance'});
+  gl=glc.getContext('webgl',{antialias:false,powerPreference:'high-performance'});
   const sh=(ty,src)=>{const o=gl.createShader(ty);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o;};
-  GP=gl.createProgram();gl.attachShader(GP,sh(gl.VERTEX_SHADER,'attribute vec2 q;void main(){gl_Position=vec4(q,0.,1.);}'));gl.attachShader(GP,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(GP);
-  if(!gl.getProgramParameter(GP,gl.LINK_STATUS))throw 'link';
-  gl.useProgram(GP);const bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-  const loc=gl.getAttribLocation(GP,'q');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-  ['res','t','z','hue','mx','nA','nB','gold','vel','mA','mB','melt','club','pulse'].forEach(k=>GU[k]=gl.getUniformLocation(GP,k));
-  glc.style.display='block'; c.style.display='none';
-}catch(e){gl=null;}
-// resolution: native device pixels x supersampling (up to 1.5x beyond native), governed by measured frame time
+  const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,'attribute vec2 q;void main(){gl_Position=vec4(q,0.,1.);}'));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw gl.getProgramInfoLog(pr);
+  gl.useProgram(pr);const bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(pr,'q');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  ['res','t','cz','P','spd','pulse','hue'].forEach(k=>GU[k]=gl.getUniformLocation(pr,k));
+}catch(e){ gl=null; console.error(e); document.body.style.background='radial-gradient(ellipse at 50% 60%,#2a1030,#04030a 70%)'; }
 const DPR=Math.min(devicePixelRatio||1,3);
-const MOBILE=matchMedia('(pointer:coarse)').matches||innerWidth<820;
-let ssq=MOBILE?.7:1.0, gEma=1/60, gAcc=0;
-const SSMAX=MOBILE?1.0:1.3, MAXPX=MOBILE?1.5e6:4.0e6;
-function glSize(){ if(!gl)return; let q=DPR*ssq; const px=innerWidth*innerHeight*q*q; if(px>MAXPX) q=Math.sqrt(MAXPX/(innerWidth*innerHeight));
-  const mx=gl.getParameter(gl.MAX_VIEWPORT_DIMS); q=Math.min(q,mx[0]/innerWidth,mx[1]/innerHeight);
-  glc.width=Math.round(innerWidth*q); glc.height=Math.round(innerHeight*q); gl.viewport(0,0,glc.width,glc.height); }
+let ssq=MOBILE?.45:.8, gEma=1/60, gAcc=0; const SSMAX=MOBILE?.75:1.25, MAXPX=MOBILE?1.0e6:3.2e6;
+function glSize(){ if(!gl)return; let q=DPR*ssq; if(innerWidth*innerHeight*q*q>MAXPX) q=Math.sqrt(MAXPX/(innerWidth*innerHeight));
+  glc.width=Math.max(2,Math.round(innerWidth*q)); glc.height=Math.max(2,Math.round(innerHeight*q)); gl.viewport(0,0,glc.width,glc.height); }
 addEventListener('resize',glSize); glSize();
-function govern(dt){
-  if(dt>=.049) return; // ignore stalls (tab switch, scroll jank)
-  gEma+=(dt-gEma)*.05; gAcc+=dt; if(gAcc<.8) return; gAcc=0;
-  const fps=1/gEma, old=ssq;
-  if(fps<52) ssq=Math.max(.35,ssq*.82);
-  else if(fps>58.5 && ssq<SSMAX) ssq=Math.min(SSMAX,ssq*1.05);
-  if(Math.abs(ssq-old)>.01) glSize();
-}
-function drawGL(t,dt){
-  govern(dt);
-  if(target.mode!==mB){ mA=gmx<1?mA:mB; nA_=N; mB=target.mode; gmx=0; }
-  gmx=Math.min(1,gmx+dt/1.2);
-  goldv+=(((target.hue===42)?1:0)-goldv)*.03;
-  gl.uniform2f(GU.res,glc.width,glc.height);gl.uniform1f(GU.t,t);gl.uniform1f(GU.z,z);gl.uniform1f(GU.hue,cur.hue);
-  gl.uniform1f(GU.mx,gmx*gmx*(3-2*gmx));gl.uniform1f(GU.nA,nA_);gl.uniform1f(GU.nB,N);gl.uniform1f(GU.gold,goldv);gl.uniform1f(GU.vel,vel);
-  gl.uniform1f(GU.mA,mA);gl.uniform1f(GU.mB,mB);
-  const maxS2=document.documentElement.scrollHeight-innerHeight, pr2=maxS2>0?Math.min(1,scrollY/maxS2):0;
-  meltv+=(pr2*1.0-meltv)*.05;
-  clubv+=((target.mode===6?1.15:(target.mode===4?.55:(target.mode>=7?.1:.28)))+Math.min(vel,2)*.35+(audioOn?.15:0)-clubv)*.06;
-  gl.uniform1f(GU.melt,meltv); gl.uniform1f(GU.club,clubv);
-  gl.uniform1f(GU.pulse,Math.exp(-Math.max(0,performance.now()/1000-kickAt)*7));
-  gl.drawArrays(gl.TRIANGLES,0,3);
-}
+function govern(dt){ if(dt>=.049)return; gEma+=(dt-gEma)*.06; gAcc+=dt; if(gAcc<.7)return; gAcc=0;
+  const fps=1/gEma,o=ssq; if(fps<50) ssq=Math.max(.28,ssq*.82); else if(fps>58.5&&ssq<SSMAX) ssq=Math.min(SSMAX,ssq*1.05); if(Math.abs(o-ssq)>.01)glSize(); }
 
+let last=performance.now();
 function frame(now){
   const dt=Math.min((now-last)/1000,.05); last=now; const t=now/1000;
-  const dy=scrollY-lastY; lastY=scrollY; vel+=(Math.abs(dy)/Math.max(dt,.001)/900-vel)*.08;
-  boost*=.96;
-  // background is driven by scroll distance; the deeper into the page, the more each scroll moves it
-  const maxS=document.documentElement.scrollHeight-innerHeight, prog=maxS>0?Math.min(1,scrollY/maxS):0;
-  const gain=1+6*Math.pow(prog,1.35);
-  zT+=dy/90*gain + boost*dt*.25 + .03*dt;
-  z+=(zT-z)*Math.min(1,dt*5);
-  let dh=((target.hue-cur.hue+540)%360)-180; cur.hue=(cur.hue+dh*.03+360)%360;
-  if(target.n!==N){Nfrom=N;N=target.n;Nmix=0;} Nmix=Math.min(1,Nmix+dt/1.1);
-  if(gl){ drawGL(t,dt); if(!reduce)requestAnimationFrame(frame); return; }
-  x.setTransform(dpr,0,0,dpr,0,0);
-  x.globalCompositeOperation='source-over';
-  x.fillStyle='rgba(5,3,10,'+(.55-Math.min(vel,3)*.12)+')';x.fillRect(0,0,W,H); // trails = motion blur
-  x.globalCompositeOperation='lighter';
-  const rot=t*.008+z*.025;
-  if(Nmix<1) drawLayer(t,Nfrom,1-Nmix,rot,z,cur.hue);
-  drawLayer(t,N,Nmix,rot,z,cur.hue);
-  drawLayer(t,N,.18,-rot*1.4,z*1.5+.5,(cur.hue+160)%360);
-  x.globalCompositeOperation='source-over';
-  if(!reduce)requestAnimationFrame(frame);
+  const dy=scrollY-lastY; lastY=scrollY; vel+=(Math.abs(dy)/Math.max(dt,.001)/900-vel)*.08; boost*=.96;
+  P=progress();
+  drift+=dt*(.5+P*.6);                       // the world keeps breathing forward even at rest
+  const czT=P*LEN+drift;
+  const prev=cz; cz+=(czT-cz)*Math.min(1,dt*3.2);
+  spd+=(Math.min(1.5,Math.abs(cz-prev)/Math.max(dt,.001)/18)-spd)*.1;
+  let h=300; HUES.forEach(([p,v])=>{if(P>=p)h=v;}); target.hue=h;
+  if(gl){ govern(dt);
+    gl.uniform2f(GU.res,glc.width,glc.height); gl.uniform1f(GU.t,t); gl.uniform1f(GU.cz,cz); gl.uniform1f(GU.P,P);
+    gl.uniform1f(GU.spd,spd); gl.uniform1f(GU.pulse,Math.exp(-Math.max(0,t-kickAt)*7)); gl.uniform1f(GU.hue,h);
+    gl.drawArrays(gl.TRIANGLES,0,3); }
+  // subtitles
+  subs.forEach(s=>{ const inside=P>=s.a&&P<=s.b; const st=inside?1:(P>s.b?2:0);
+    if(st!==s.state){ s.state=st; s.el.classList.toggle('on',st===1); s.el.classList.toggle('out',st===2); } });
+  document.querySelector('.prog').style.width=(P*100)+'%';
+  document.getElementById('hint').style.opacity=P<.02?.75:0;
+  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
-/* ---------- autoplay (cinema mode) ---------- */
-let auto=false, acc=0;
-const playBtn=document.getElementById('play'), icon=document.getElementById('playIcon');
-function setAuto(on){
-  auto=on; cinema=on; playBtn.setAttribute('aria-pressed',on); playBtn.querySelector('span').textContent=on?'Pause':'Play';
-  icon.setAttribute('d',on?'M3 2h4v12H3zM9 2h4v12H9z':'M4 2l10 6-10 6z'); bars(on);
-  if(on){ if(scrollY>=document.documentElement.scrollHeight-innerHeight-4) scrollTo(0,0); last2=performance.now(); requestAnimationFrame(autoStep); }
-}
-let last2=0;
-function autoStep(now){
-  if(!auto)return; const dt=Math.min((now-last2)/1000,.05); last2=now;
-  // slow down near scene centers so text can play out
-  const v=innerHeight*0.16; // constant autoplay speed (px per second)
-  acc+=v*dt; const st=Math.floor(acc); if(st){scrollBy(0,st);acc-=st;}
-  if(scrollY>=document.documentElement.scrollHeight-innerHeight-2){setAuto(false);return;}
-  requestAnimationFrame(autoStep);
-}
+/* ---------- autoplay: constant speed flight ---------- */
+const playBtn=document.getElementById('play'),icon=document.getElementById('playIcon');
+let acc=0,last2=0;
+function setAuto(on){ auto=on; playBtn.setAttribute('aria-pressed',on); playBtn.querySelector('span').textContent=on?'Pause':'Play';
+  icon.setAttribute('d',on?'M3 2h4v12H3zM9 2h4v12H9z':'M4 2l10 6-10 6z');
+  if(on){ if(scrollY>=document.documentElement.scrollHeight-innerHeight-4) scrollTo(0,0); last2=performance.now(); requestAnimationFrame(autoStep);} }
+function autoStep(now){ if(!auto)return; const dt=Math.min((now-last2)/1000,.05); last2=now;
+  acc+=innerHeight*.22*dt; const st=Math.floor(acc); if(st){scrollBy(0,st);acc-=st;}
+  if(scrollY>=track.offsetHeight-innerHeight){setAuto(false);return;} requestAnimationFrame(autoStep); }
 playBtn.addEventListener('click',()=>setAuto(!auto));
-['wheel','touchstart','keydown'].forEach(ev=>addEventListener(ev,e=>{ if(auto && !(e.target.closest&&e.target.closest('.deck'))) setAuto(false); },{passive:true}));
+['wheel','touchstart','keydown'].forEach(ev=>addEventListener(ev,e=>{ if(auto&&!(e.target.closest&&e.target.closest('.deck'))) setAuto(false); },{passive:true}));
 
-/* ---------- FAQ: rise → open at center → type answer → bring next to center ---------- */
-const qas=[...document.querySelectorAll('.qa details')];
-let lastUser=0;
-['wheel','touchmove','keydown'].forEach(ev=>addEventListener(ev,()=>{lastUser=performance.now()},{passive:true}));
-qas.forEach((d,i)=>{
-  d.addEventListener('toggle',()=>{
-    if(!d.open)return;
-    const p=d.querySelector('[data-type="ans"]');
-    if(window.typeIt && p && root.classList.contains('js')) window.typeIt(p);
-    if(audioOn) chime();
-    const n=p?p.textContent.length:40, wait=n*30+1100, t0=performance.now();
-    const nx=qas[i+1];
-    if(nx) setTimeout(()=>{ if(!auto && lastUser<t0) nx.closest('.qa').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'}); },wait);
-  });
-});
-function faqCheck(){
-  const mid=innerHeight/2;
-  qas.forEach(d=>{ if(d.open)return; const r=d.getBoundingClientRect(); if(Math.abs((r.top+r.bottom)/2-mid)<innerHeight*.16) d.open=true; });
-}
-addEventListener('scroll',faqCheck,{passive:true});
-
+/* ---------- gate ---------- */
+const gate=document.getElementById('gate');
+function enter(withSound){ gate.classList.add('gone'); if(withSound){ const b=document.getElementById('snd'); if(b.getAttribute('aria-pressed')!=='true') b.click(); } }
+document.getElementById('go').addEventListener('click',()=>enter(true));
+document.getElementById('silent').addEventListener('click',()=>enter(false));
 /* ---------- immersive psychedelic beat (synthesized live, no files) ----------
    The scroll is the crank: each STEP px advances one 16th of the groove (stop = groove stops, tails ring out).
    Under it an ambient bed breathes; kick side-chains the bed; reverb + ping-pong delay make the space. */
