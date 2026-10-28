@@ -207,7 +207,7 @@ footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
 <div class="eyebrow shadow" data-rise>Research Movie</div>
 <h2 class="l shadow" style="margin-top:12px" data-type>研究に関する|参考動画</h2>
 <div class="yt" id="yt" data-rise>
-<a class="ytposter" href="https://youtu.be/sqZQmi5E_8s?si=sdwpepo719xBomTA" target="_blank" rel="noopener" aria-label="参考動画をYouTubeで再生"><span class="ytplay" aria-hidden="true"></span><span class="ytlab">動画を再生</span></a>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/sqZQmi5E_8s?si=OoOLa6IMI2pwlCYX" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
 <div class="buy" data-rise>
 <p class="s">スタディキットはこちらより購入可能</p>
@@ -265,11 +265,7 @@ footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
 <script>
 // 公式LINEの友だち追加URL（例: https://lin.ee/xxxxxxx）をここに設定してください
 const LINE_URL = "https://lin.ee/755vDwv";
-// YouTube: embedded player when hosted on your own site; inside the Claude viewer embeds are blocked, so a poster that opens YouTube is shown instead
-(()=>{const box=document.getElementById('yt'); if(!box)return;
-  const inViewer=/claude\.ai|claudeusercontent|claude\.site/.test(location.hostname)||location.protocol==='file:';
-  if(!inViewer){ box.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/sqZQmi5E_8s?rel=0&playsinline=1" title="研究に関する参考動画" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>'; }
-})();
+
 document.querySelectorAll('[data-line]').forEach(a=>{ if(LINE_URL){a.href=LINE_URL;a.target="_blank";a.rel="noopener";} });
 
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
