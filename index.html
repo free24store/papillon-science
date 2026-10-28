@@ -32,6 +32,8 @@ main{position:relative;z-index:2;overflow-x:clip}
 .scene{min-height:100svh;display:flex;align-items:center;padding-block:14vh}
 .scene.c{text-align:center}
 .scene .in{width:100%}
+.eyebrow::before{content:"\00D7\00D7\00D7";color:#e0473f;letter-spacing:.18em;margin-right:.9em;font-weight:500}
+.city{font-family:var(--disp);font-style:italic;font-size:clamp(1rem,2.6vw,1.25rem);letter-spacing:.2em;color:var(--paper);opacity:.85;margin-top:6px}
 .eyebrow{font-family:var(--ui);letter-spacing:.42em;text-transform:uppercase;font-size:.72rem;color:var(--gold);font-weight:400}
 h1,h2,h3{font-weight:600;line-height:1.25;margin:0;text-wrap:balance}
 .ph{display:inline-block;white-space:nowrap}
@@ -158,13 +160,14 @@ footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
 </div>
 
 <main>
-<section class="scene c" data-hue="300" data-mode="0" data-n="6">
+<section class="scene c" data-hue="300" data-mode="7" data-n="6">
 <div class="in shadow">
 <div class="brand" data-zoom>Papillon Science</div>
 <div class="tiny" data-rise style="margin-top:10px">Research for a better tomorrow</div>
+<div class="city" data-rise>Amsterdam ── Nocturne</div>
 <h1 style="margin-top:7vh"><span class="l" data-type>境界領域の</span><br><span class="xl prism" data-zoom>その先へ</span></h1>
 <p class="m" style="margin-top:4vh" data-type>没入体験を|今すぐ|あなたに。</p>
-<p class="body s" data-rise><span class="ph">万華鏡のトンネル、</span><span class="ph">光るマーブル、</span><span class="ph">金の蝶。</span><br><span class="ph">パピヨンサイエンスがつくる</span><span class="ph">縦型の映像作品を、</span><br><span class="ph">公式LINEで</span><span class="ph">お届けします。</span></p>
+<p class="body s" data-rise><span class="ph">運河に揺れる灯り、</span><span class="ph">光るマーブル、</span><span class="ph">万華鏡の夜。</span><br><span class="ph">パピヨンサイエンスがつくる</span><span class="ph">縦型の映像作品を、</span><br><span class="ph">公式LINEで</span><span class="ph">お届けします。</span></p>
 <a class="btn" href="#line" data-line data-rise>LINEで友だち追加する</a>
 <span class="note" data-rise>登録無料 ／ いつでもブロックで解除できます</span>
 </div>
@@ -172,7 +175,7 @@ footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
 
 <section class="scene" data-hue="190" data-mode="4" data-n="4">
 <div class="in shadow">
-<div class="eyebrow" data-rise>Chapter I ─ Light</div>
+<div class="eyebrow" data-rise>Chapter I ─ Grachten</div>
 <p class="l" style="margin-top:28px" data-type>光は、</p>
 <p class="xl gold disp" style="margin:0" data-zoom>speed</p>
 <p class="l" style="margin:0" data-type>をまとって、|奥へ、|奥へ。</p>
@@ -180,10 +183,10 @@ footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
 </div>
 </section>
 
-<section class="scene c" data-hue="40" data-mode="1" data-n="8">
+<section class="scene c" data-hue="40" data-mode="8" data-n="8">
 <div class="in shadow">
-<div class="eyebrow" data-rise>Chapter II ─ Metamorphosis</div>
-<p class="m" style="margin-top:26px" data-type>蝶が|姿を変えるように。</p>
+<div class="eyebrow" data-rise>Chapter II ─ Tulpen</div>
+<p class="m" style="margin-top:26px" data-type>チューリップが|色を変えるように。</p>
 <p class="xl prism" style="margin:.1em 0" data-zoom>変身する色彩</p>
 <p class="m" data-type>見慣れた景色の|向こうにある、|色と光を|探しに。</p>
 </div>
@@ -201,7 +204,7 @@ footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
 </div>
 </section>
 
-<div class="marq" aria-hidden="true"><span>Kaleidoscope · Marble · Neon Tunnel · Golden Butterfly · Kaleidoscope · Marble · Neon Tunnel · Golden Butterfly · </span><span>Kaleidoscope · Marble · Neon Tunnel · Golden Butterfly · Kaleidoscope · Marble · Neon Tunnel · Golden Butterfly · </span></div>
+<div class="marq" aria-hidden="true"><span>Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · </span><span>Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · Amsterdam · Grachten · Tulpen · Neon Nocturne · Kaleidoscope · </span></div>
 
 <section class="scene" data-hue="150" data-mode="3" data-n="6">
 <div class="in">
@@ -242,21 +245,10 @@ footer ul{margin:12px 0 0;padding-left:1.1em;line-height:1.8}
 </div>
 </section>
 
-<section class="scene c" data-hue="42" data-mode="4" data-n="6" id="join">
+<section class="scene c" data-hue="42" data-mode="7" data-n="6" id="join">
 <div class="in shadow">
-<svg class="bf" viewBox="0 0 200 190" role="img" aria-label="金のワイヤーで描いた蝶">
-<path class="w" pathLength="1" d="M100 86 L78 30 L40 10 L8 36 L12 70 L58 90 Z"/>
-<path class="w" pathLength="1" d="M100 94 L56 96 L22 128 L40 176 L74 160 L92 124 Z"/>
-<path class="w" pathLength="1" d="M100 86 L122 30 L160 10 L192 36 L188 70 L142 90 Z"/>
-<path class="w" pathLength="1" d="M100 94 L144 96 L178 128 L160 176 L126 160 L108 124 Z"/>
-<line x1="100" y1="86" x2="40" y2="10" opacity=".35"/><line x1="100" y1="86" x2="8" y2="36" opacity=".35"/><line x1="100" y1="86" x2="12" y2="70" opacity=".35"/>
-<line x1="100" y1="86" x2="160" y2="10" opacity=".35"/><line x1="100" y1="86" x2="192" y2="36" opacity=".35"/><line x1="100" y1="86" x2="188" y2="70" opacity=".35"/>
-<line x1="100" y1="94" x2="22" y2="128" opacity=".35"/><line x1="100" y1="94" x2="40" y2="176" opacity=".35"/>
-<line x1="100" y1="94" x2="178" y2="128" opacity=".35"/><line x1="100" y1="94" x2="160" y2="176" opacity=".35"/>
-<path d="M98 60 Q88 30 76 12 M102 60 Q112 30 124 12"/>
-<ellipse class="body" cx="100" cy="98" rx="3.4" ry="26"/>
-</svg>
-<p class="brand" style="margin-top:22px" data-zoom>Papillon Science</p>
+
+<p class="brand" data-zoom>Papillon Science</p>
 <h2 style="margin-top:4vh"><span class="l" data-type>境界領域の</span><br><span class="xl prism" data-zoom>その先へ</span></h2>
 <p class="m" style="margin-top:3vh" data-type>没入体験を|今すぐ|あなたに。</p>
 <a class="btn" href="#line" data-line data-rise>LINEで友だち追加する</a>
@@ -468,7 +460,98 @@ vec3 sWarp(float r,float a){
  vec3 col=mix(pal(h+t*.05),vec3(1.,.75,.35),gold);
  return col*mang*mr*(.4+1.6*clamp(r*1.5,0.,1.))*2.2;
 }
+
+float h1(float x){return fract(sin(x*127.1+.37)*43758.5453);}
+float bx(float x,float a,float b,float pw){return smoothstep(a-pw,a+pw,x)-smoothstep(b-pw,b+pw,x);}
+vec4 houses(vec2 q,float L,float pw){
+ float w=.27,i=floor(q.x/w),u=fract(q.x/w);
+ float hh=h1(i+L*17.),H=.42+.42*hh,g=floor(h1(i*3.1+L*5.)*3.),c=abs(u-.5)*2.,gh=.13;
+ float top=g<.5?H+gh*floor((1.-c)*4.)/4.*step(c,.82):(g<1.5?H+gh*sqrt(max(0.,1.-c*c*1.4)):H+gh*max(0.,1.-c*1.15));
+ float ins=smoothstep(top+pw,top-pw,q.y)*step(0.,q.y)*bx(u,.025,.975,pw*3.7);
+ vec3 tone=mix(vec3(.26,.11,.07),vec3(.07,.10,.17),h1(i*7.+L));
+ tone=mix(tone,vec3(.05,.13,.10),step(.72,h1(i*11.+L)));
+ tone*=.55+.6*smoothstep(H+gh,0.,q.y)*(.8+.2*sin(t*.3+i));
+ float fl=.1,row=floor(q.y/fl),col=floor(u*3.);vec2 f=vec2(fract(u*3.),fract(q.y/fl));
+ float inWin=bx(f.x,.27,.73,pw*11.)*bx(f.y,.18,.84,pw*10.)*step(q.y,H-.03)*step(.05,q.y);
+ float trim=(bx(f.x,.22,.78,pw*11.)*bx(f.y,.13,.89,pw*10.)-inWin)*step(q.y,H-.03)*step(.05,q.y);
+ float lid=hs(vec2(i*3.+col,row+L*9.));
+ float lit=step(.32,lid)*(.75+.25*sin(t*.6+lid*30.));
+ vec3 wc=lid>.86?pal(hue/360.+lid*2.+t*.05)*1.3:mix(vec3(1.,.62,.25),vec3(1.,.8,.5),lid);
+ vec3 c3=tone+vec3(.85,.82,.76)*trim*.55+wc*inWin*lit*1.5+vec3(.01,.012,.02)*inWin*(1.-lit);
+ // hoist beam & gable window
+ float gw=bx(u,.44,.56,pw*3.7)*bx(q.y,H+.02,H+.07,pw)*step(.5,h1(i*5.+L));
+ c3+=vec3(1.,.7,.3)*gw*1.2;
+ return vec4(c3,ins);
+}
+vec3 skyN(vec2 p,float hz){
+ vec3 c=mix(vec3(.05,.02,.10),vec3(.006,.004,.025),clamp((p.y-hz)*1.1,0.,1.));
+ c+=pal(hue/360.+.55+p.x*.1)*.12*exp(-pow((p.y-hz-.75-.08*sin(p.x*2.+t*.3))/.12,2.));
+ vec2 sp=floor(p*90.);float st=hs(sp);c+=step(.996,st)*(.5+.5*sin(t*2.+st*90.))*.9;
+ return c;
+}
+vec3 bridge(vec2 q,float hz,float pw,inout float m){
+ float X=q.x/1.9, bxp=(fract(X)-.5)*1.9;
+ float ay=hz+.2*sqrt(max(0.,1.-pow(bxp/.48,2.)));
+ float arch=step(abs(bxp),.5)*smoothstep(.022+pw,.022-pw,abs(q.y-ay-.01));
+ float deck=step(abs(bxp),.62)*bx(q.y,hz+.2,hz+.245,pw);
+ float rail=step(abs(bxp),.62)*bx(q.y,hz+.27,hz+.278,pw);
+ m=max(m,max(arch,deck));
+ vec3 c=vec3(.035,.03,.04)*max(arch,deck)+vec3(.5,.45,.4)*rail*.4;
+ for(int k=0;k<11;k++){float bxk=-.47+.094*float(k);float by=hz+.2*sqrt(max(0.,1.-pow(bxk/.48,2.)))+.035;
+  vec2 d=vec2(bxp-bxk,q.y-by);float r2=dot(d,d);c+=vec3(1.,.78,.42)*(exp(-r2*9000.)*2.5+exp(-r2*500.)*.25);}
+ return c;
+}
+vec3 sCanal(vec2 p){
+ float hz=-.3,pw=1.2/PS;
+ bool wat=p.y<hz; vec2 q=p; float dd=hz-p.y;
+ if(wat){q.y=hz+dd*1.05;q.x+=sin(p.y*60.+t*1.8)*.0028*(1.+dd*4.)+sin(p.y*23.-t*.9+p.x*2.)*.0035;}
+ vec3 c=skyN(q,hz);
+ vec4 far=houses(vec2(q.x*1.7+z*.09+7.,(q.y-hz-.05)*1.7),1.,pw*1.7);
+ c=mix(c,far.rgb*.55+vec3(.0,.0,.02),far.a);
+ vec4 nr=houses(vec2(q.x+z*.22,(q.y-hz-.03)),0.,pw);
+ c=mix(c,nr.rgb,nr.a);
+ float bm=0.; vec3 br=bridge(vec2(q.x+z*.22+.3,q.y),hz,pw,bm);
+ c=mix(c,br,bm)+br*(1.-bm);
+ // quay edge
+ c=mix(c,vec3(.04,.035,.035),bx(q.y,hz,hz+.03,pw));
+ if(wat){
+  c=c*vec3(.42,.5,.72)*(.9-.4*clamp(dd*1.8,0.,1.));
+  float sh=pow(max(0.,sin(p.y*140.+sin(p.x*12.+t)*2.+t*3.)),22.);
+  c+=sh*pal(p.x*.4+t*.06+hue/360.)*.16*(1.-clamp(dd*1.5,0.,1.));
+ }
+ return c;
+}
+vec3 sTulip(vec2 p){
+ float hz=.08,pw=1.2/PS;
+ if(p.y>hz){
+  float k=clamp((p.y-hz)*1.6,0.,1.);
+  vec3 c=mix(vec3(.55,.16,.22),vec3(.05,.02,.12),pow(k,.6));
+  c+=vec3(1.,.55,.25)*exp(-pow(length(p-vec2(-.25,hz+.05))/.13,2.))*1.2;
+  vec2 hub=vec2(.33,hz+.26);vec2 d=p-hub;float r=length(d),an=atan(d.y,d.x)-t*.6-z*.08;
+  float sails=step(r,.24)*step(.02,r)*smoothstep(.07+pw*6.,.07-pw*6.,abs(fract(an/(PI*.5))-.5));
+  float lat=step(.5,fract(r*40.))*.5+.5;
+  float tw=step(abs(p.x-hub.x),.035+(hub.y-p.y)*.1)*step(p.y,hub.y)*step(hz,p.y);
+  float cap=step(length(vec2(d.x,max(d.y,0.)*1.4)),.045)*step(-.01,d.y);
+  c=mix(c,vec3(.02,.015,.03),max(max(sails*lat,tw),cap));
+  c+=vec3(1.,.8,.4)*exp(-r*r*3000.)*1.5;
+  return c;
+ }
+ float d=hz-p.y,zz=.36/d,u=p.x*zz,v=zz+z*1.6;
+ float rowi=floor(u*3.2);float hu=fract(rowi*.173+hue/360.+t*.02);
+ vec3 tc=pal(hu)*1.25; if(fract(rowi*.37)>.8) tc=vec3(1.,.95,.85);
+ vec2 cell=vec2(fract(u*3.2),fract(v*5.));
+ float cp=PS*d*d/.36*.2;
+ float head=clamp((.3-length((cell-.5)*vec2(1.,1.3)))*cp+.5,0.,1.);
+ float stripe=smoothstep(.18,.24,abs(cell.x-.5));
+ vec3 g=mix(tc*.35,vec3(.02,.06,.025),stripe);
+ vec3 c=mix(g,tc,head*(1.-stripe));
+ c=mix(c,pal(hu)*.3,clamp((1.-cp/6.),0.,1.)); 
+ c=mix(c,vec3(.55,.16,.22)*.7,exp(-d*9.));
+ return c;
+}
 vec3 scene(float m,vec2 p,float r,float a,float N){
+ if(m>7.5)return sTulip(p);
+ if(m>6.5)return sCanal(p);
  if(m>5.5)return sDots(r,a)*.35;
  if(m>4.5)return sMarble(p);
  if(m<.5)return sWin(r,a,N);
@@ -486,8 +569,10 @@ void main(){
  float r=length(p)+1e-4,a=atan(p.y,p.x)+t*.008+z*.025;
  vec3 c=scene(mB,p,r,a,nB);
  if(mx<.999)c=mix(scene(mA,p,r,a,nA),c,mx);
- c*=pow(clamp(r*2.3,.1,1.1),1.15);
- c+=exp(-r*r*260.)*pal(hue/360.+.1)*1.2+exp(-r*r*1500.)*1.2;
+ float tun=1.-step(6.5,mB)*mx-(mx<.999?step(6.5,mA)*(1.-mx):0.);
+ tun=clamp(tun,0.,1.);
+ c*=mix(1.,pow(clamp(r*2.3,.1,1.1),1.15),tun);
+ c+=(exp(-r*r*260.)*pal(hue/360.+.1)*1.2+exp(-r*r*1500.)*1.2)*tun;
  // marble bleeding in as you go deeper
  c=mix(c,c*.6+sMarble(p0)*.55,smoothstep(.35,1.,melt)*.45*step(mB,4.6));
  c+=beams(p0,club);
@@ -534,7 +619,7 @@ function drawGL(t,dt){
   gl.uniform1f(GU.mA,mA);gl.uniform1f(GU.mB,mB);
   const maxS2=document.documentElement.scrollHeight-innerHeight, pr2=maxS2>0?Math.min(1,scrollY/maxS2):0;
   meltv+=(pr2*1.0-meltv)*.05;
-  clubv+=((target.mode===6?1.15:(target.mode===4?.55:.28))+Math.min(vel,2)*.35+(audioOn?.15:0)-clubv)*.06;
+  clubv+=((target.mode===6?1.15:(target.mode===4?.55:(target.mode>=7?.1:.28)))+Math.min(vel,2)*.35+(audioOn?.15:0)-clubv)*.06;
   gl.uniform1f(GU.melt,meltv); gl.uniform1f(GU.club,clubv);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
