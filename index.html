@@ -354,7 +354,7 @@ function drawLayer(t,n,alpha,rot,zz,hueBase){
 
 /* ---------- WebGL scenes (original shaders inspired by: checker warp tunnel, rainbow dot spiral, glass-bead kaleidoscope, hyperspace streaks) ---------- */
 const FS=`precision highp float;
-uniform vec2 res;uniform float t,z,hue,mx,nA,nB,gold,vel,melt,club;uniform float mA,mB;
+uniform vec2 res;uniform float t,z,hue,mx,nA,nB,gold,vel,melt,club,pulse;uniform float mA,mB;
 #define TAU 6.2831853
 #define PI 3.1415927
 vec3 pal(float h){return pow(0.5+0.5*cos(TAU*(h+vec3(0.,.33,.67))),vec3(1.2));}
@@ -372,29 +372,70 @@ vec3 sMarble(vec2 p){
  base=mix(base,vec3(.02,.02,.05),.35*smoothstep(.55,.75,w));
  return base+vec3(1.,.78,.4)*(vein*1.3+vein2*.6)+pal(w+.5)*pow(w2,6.)*1.2;
 }
+vec2 rot2(vec2 v,float a){float c=cos(a),s=sin(a);return vec2(c*v.x-s*v.y,s*v.x+c*v.y);}
+float beamI(vec2 p,vec2 o,float th,float w0,float spread,out float al){
+ vec2 d=vec2(sin(th),-cos(th));vec2 rel=p-o;al=dot(rel,d);float pe=abs(rel.x*d.y-rel.y*d.x);
+ if(al<0.)return 0.;
+ float w=w0+spread*al;
+ return (exp(-pow(pe/(w*.18),2.))*1.3+exp(-pow(pe/w,2.))*.45)/(1.+al*.6);
+}
 vec3 beams(vec2 p,float k){
+ if(k<.02)return vec3(0.);
  vec3 c=vec3(0.);
- for(int i=0;i<7;i++){
-  float fi=float(i);
-  vec2 o=vec2((fi/6.-.5)*1.4,(mod(fi,2.)<.5?1.:-1.)*1.05);
-  float th=(mod(fi,2.)<.5?3.14159:0.)+sin(t*(.4+.13*fi)+fi*1.7+z*.15)*.75;
-  vec2 d=vec2(sin(th),cos(th));
-  vec2 rel=p-o; float al=dot(rel,d); float pe=abs(rel.x*d.y-rel.y*d.x);
-  if(al>0.){
-   float strobe=.55+.45*step(fract(t*2.42+fi*.31),.5);
-   vec3 col=pal(fi/7.+t*.07+hue/360.);
-   c+=col*(exp(-pow(pe/.0045,2.))*1.6+exp(-pow(pe/(.03+.09*al),2.))*.35)*strobe/(1.+al*.8);
+ float T=t*(1.+vel*.4);
+ float ph=T/5.5, mode=mod(floor(ph),4.), mfr=smoothstep(.0,.25,fract(ph));
+ float pm=mod(floor(ph)-1.,4.);
+ float haze=.55+.45*vn(p*3.+vec2(0.,-t*.25))*vn(p*1.3+vec2(t*.1,0.));
+ vec2 tgt=vec2(sin(T*.7)*.35,sin(T*.53)*.5);
+ // 1) moving heads: 6 top + 4 bottom, choreographed
+ for(int i=0;i<10;i++){
+  float fi=float(i); bool top=i<6;
+  float xi=top?(fi/5.-.5)*1.5:((fi-6.)/3.-.5)*1.3;
+  vec2 o=vec2(xi,top?1.08:-1.08);
+  float base=top?0.:3.14159;
+  float sgn=mod(fi,2.)<.5?1.:-1.;
+  // four choreographies
+  float a0=base+sin(T*.9)*.55+(xi)*.25;                         // fan sweep
+  float a1=base+sgn*(.35+.35*sin(T*1.3));                       // scissors
+  vec2 dv=tgt-o; float a2=atan(dv.x,-dv.y)*(top?1.:1.)+(top?0.:0.); if(!top)a2=atan(-dv.x,dv.y)+3.14159; // converge
+  float a3=base+sin(T*.6+fi*.9)*.4;                              // chase base
+  float A0=mode<.5?a0:(mode<1.5?a1:(mode<2.5?a2:a3));
+  float A1=pm<.5?a0:(pm<1.5?a1:(pm<2.5?a2:a3));
+  float th=mix(A1,A0,mfr);
+  float chase=mode>2.5?step(.55,fract(T*1.6-fi*.1)):1.;
+  float al;float I=beamI(p,o,th,.004,.06,al)*chase*(.65+.35*pulse);
+  float hue_=fract(hue/360.+floor(ph)*.21+(top?0.:.5)+fi*.015);
+  c+=pal(hue_)*I*haze*1.25;
+ }
+ // 2) laser fan from top centre (alternate phrases)
+ float lz=step(.5,mod(floor(ph),2.))*(.6+.4*pulse);
+ if(lz>0.){
+  vec2 o=vec2(0.,1.15); float sweep=sin(T*.8)*.5;
+  vec3 lc=mix(vec3(.2,1.,.45),vec3(.3,.8,1.),.5+.5*sin(T*.3));
+  for(int j=0;j<20;j++){
+   float fj=float(j);
+   float th=sweep+(fj/19.-.5)*1.7;
+   vec2 d=vec2(sin(th),-cos(th));vec2 rel=p-o;float al=dot(rel,d);float pe=abs(rel.x*d.y-rel.y*d.x);
+   if(al>0.) c+=lc*(exp(-pow(pe/.0016,2.))*1.4+exp(-pow(pe/.012,2.))*.12)*lz*haze;
   }
  }
- for(int j=0;j<14;j++){
+ // 3) mirror ball spots drifting across the haze
+ vec2 mq=rot2(p,T*.12)*7.;mq.y+=T*.35;
+ vec2 mi=floor(mq),mf=fract(mq)-.5;float mh=hs(mi);
+ float spot=exp(-dot(mf,mf)*140.)*step(.55,mh)*(.5+.5*sin(T*4.+mh*50.));
+ c+=mix(vec3(1.,.95,.9),pal(mh+t*.05),.35)*spot*.55;
+ // 4) roaming light sources with cross flare
+ for(int j=0;j<8;j++){
   float fj=float(j);
-  vec2 lp=vec2(sin(t*(.21+.05*fj)+fj*2.1)*.55,sin(t*(.17+.04*fj)+fj*1.3)*.95);
-  vec2 dd=p-lp; float r2=dot(dd,dd);
-  float tw=.5+.5*sin(t*3.+fj*4.);
+  vec2 lp=vec2(sin(T*(.21+.05*fj)+fj*2.1)*.55,sin(T*(.17+.04*fj)+fj*1.3)*.95);
+  vec2 dd=p-lp; float r2=dot(dd,dd); float tw=.5+.5*sin(T*3.+fj*4.);
   vec3 col=pal(fj*.13+t*.05);
-  c+=col*(exp(-r2*2500.)*2.2+exp(-r2*90.)*.18)*tw;
-  c+=col*(exp(-pow(dd.x*90.,2.))*exp(-abs(dd.y)*30.)+exp(-pow(dd.y*90.,2.))*exp(-abs(dd.x)*30.))*.5*tw;
+  c+=col*(exp(-r2*2500.)*2.+exp(-r2*90.)*.15)*tw;
+  c+=col*(exp(-pow(dd.x*90.,2.))*exp(-abs(dd.y)*30.)+exp(-pow(dd.y*90.,2.))*exp(-abs(dd.x)*30.))*.45*tw;
  }
+ // 5) floor haze glow + gentle beat pulse (kept low for photosensitive safety)
+ c+=pal(hue/360.+floor(ph)*.21)*exp(-pow((p.y+1.)/.35,2.))*.25*(.7+.3*pulse);
+ c+=vec3(1.)*pulse*.05;
  return c*k;
 }
 vec3 fadeC(vec3 c,float cp,vec3 avg){return mix(avg,c,clamp((cp-1.5)/5.,0.,1.));}
@@ -521,32 +562,97 @@ vec3 sCanal(vec2 p){
  }
  return c;
 }
+float wmMask(vec2 p,vec2 base,float s,float ang,float pw){
+ vec2 q=(p-base)/s; float e=pw/s;
+ float bw=mix(.2,.11,clamp(q.y/.74,0.,1.));
+ float m=step(0.,q.y)*smoothstep(.74+e,.74-e,q.y)*smoothstep(bw+e,bw-e,abs(q.x));
+ m=max(m,bx(q.y,.29,.31,e)*step(abs(q.x),.29));
+ m=max(m,(bx(q.y,.355,.365,e)+step(abs(fract(q.x*22.)-.5),.1)*bx(q.y,.31,.36,e))*step(abs(q.x),.29));
+ m=max(m,step(length(vec2(q.x/1.05,(q.y-.74)*1.5)),.14)*step(.73,q.y));
+ vec2 h=q-vec2(0.,.81);
+ for(int k=0;k<4;k++){
+  vec2 sv=rot2(h,-(ang+float(k)*1.5708));
+  float al=sv.x, ac=sv.y;
+  float stock=step(0.,al)*step(al,.74)*step(abs(ac),.013);
+  float inF=step(.14,al)*step(al,.74)*step(.013,ac)*step(ac,.115);
+  float lat=max(step(fract(al*17.),.16),max(step(abs(ac-.115),.008),step(abs(ac-.064),.005)));
+  m=max(m,max(stock,inF*lat));
+ }
+ m=max(m,step(length(h),.03));
+ return clamp(m,0.,1.);
+}
+vec3 skyDusk(vec2 p,float hz,vec2 sun){
+ float k=clamp((p.y-hz)/1.,0.,1.);
+ vec3 c=mix(vec3(1.,.55,.32),vec3(.62,.22,.36),smoothstep(0.,.25,k));
+ c=mix(c,vec3(.18,.07,.24),smoothstep(.2,.65,k));
+ c=mix(c,vec3(.03,.02,.08),smoothstep(.6,1.,k));
+ c=mix(c,c*(.8+.4*pal(hue/360.+.6)),.25);
+ vec2 cq=vec2(p.x*1.2+t*.012,(p.y-hz)*4.2);
+ float cl=fbm(cq+vec2(0.,t*.01)),cl2=fbm(cq*1.9+5.);
+ float band=smoothstep(.45,.7,cl)*smoothstep(.95,.15,k);
+ float sd=length(p-sun);
+ vec3 lit=mix(vec3(.95,.5,.45),vec3(1.,.78,.45),exp(-sd*2.5));
+ vec3 shade=vec3(.22,.08,.18);
+ c=mix(c,mix(shade,lit,smoothstep(.35,.75,cl2)),band*.85);
+ c+=vec3(1.,.72,.42)*exp(-sd*sd*25.)*.55+vec3(1.,.9,.7)*smoothstep(.05,.035,sd)*1.4;
+ float ang=atan(p.y-sun.y,p.x-sun.x);
+ float rays=pow(vn(vec2(ang*9.,t*.08)),3.)*exp(-sd*1.6)*step(hz,p.y);
+ c+=vec3(1.,.7,.45)*rays*.35;
+ return c;
+}
 vec3 sTulip(vec2 p){
- float hz=.08,pw=1.2/PS;
+ float hz=.02,pw=1.2/PS; vec2 sun=vec2(-.28,hz+.1);
+ vec3 fogc=vec3(.95,.55,.42);
  if(p.y>hz){
-  float k=clamp((p.y-hz)*1.6,0.,1.);
-  vec3 c=mix(vec3(.55,.16,.22),vec3(.05,.02,.12),pow(k,.6));
-  c+=vec3(1.,.55,.25)*exp(-pow(length(p-vec2(-.25,hz+.05))/.13,2.))*1.2;
-  vec2 hub=vec2(.33,hz+.26);vec2 d=p-hub;float r=length(d),an=atan(d.y,d.x)-t*.6-z*.08;
-  float sails=step(r,.24)*step(.02,r)*smoothstep(.07+pw*6.,.07-pw*6.,abs(fract(an/(PI*.5))-.5));
-  float lat=step(.5,fract(r*40.))*.5+.5;
-  float tw=step(abs(p.x-hub.x),.035+(hub.y-p.y)*.1)*step(p.y,hub.y)*step(hz,p.y);
-  float cap=step(length(vec2(d.x,max(d.y,0.)*1.4)),.045)*step(-.01,d.y);
-  c=mix(c,vec3(.02,.015,.03),max(max(sails*lat,tw),cap));
-  c+=vec3(1.,.8,.4)*exp(-r*r*3000.)*1.5;
+  vec3 c=skyDusk(p,hz,sun);
+  // distant windmills in haze
+  float m2=wmMask(p,vec2(-.62,hz),.16,t*.35+1.,pw);
+  float m3=wmMask(p,vec2(.05,hz),.11,t*.42+2.,pw);
+  c=mix(c,mix(vec3(.25,.1,.16),fogc,.55),max(m2,m3)*.9);
+  // hero windmill with rim light from the sun
+  vec2 B=vec2(.42,hz-.005); float S=.42, A=t*.45+z*.06;
+  float m=wmMask(p,B,S,A,pw);
+  float mr=wmMask(p+normalize(sun-p)*.006,B,S,A,pw);
+  vec3 body=vec3(.035,.02,.035);
+  c=mix(c,body,m);
+  c+=vec3(1.,.62,.35)*clamp(m-mr,0.,1.)*1.4;
+  // tiny lit window on the mill
+  vec2 wq=(p-B)/S; c+=vec3(1.,.75,.4)*bx(wq.x,-.02,.02,pw/S)*bx(wq.y,.45,.52,pw/S)*1.5;
+  // floating gold dust
+  vec2 gq=p*14.+vec2(t*.3,-t*.5); vec2 gi=floor(gq),gf=fract(gq)-.5; float gh=hs(gi);
+  c+=vec3(1.,.8,.5)*exp(-dot(gf,gf)*220.)*step(.82,gh)*(.5+.5*sin(t*3.+gh*40.))*.8;
   return c;
  }
- float d=hz-p.y,zz=.36/d,u=p.x*zz,v=zz+z*1.6;
- float rowi=floor(u*3.2);float hu=fract(rowi*.173+hue/360.+t*.02);
- vec3 tc=pal(hu)*1.25; if(fract(rowi*.37)>.8) tc=vec3(1.,.95,.85);
- vec2 cell=vec2(fract(u*3.2),fract(v*5.));
- float cp=PS*d*d/.36*.2;
- float head=clamp((.3-length((cell-.5)*vec2(1.,1.3)))*cp+.5,0.,1.);
- float stripe=smoothstep(.18,.24,abs(cell.x-.5));
- vec3 g=mix(tc*.35,vec3(.02,.06,.025),stripe);
- vec3 c=mix(g,tc,head*(1.-stripe));
- c=mix(c,pal(hu)*.3,clamp((1.-cp/6.),0.,1.)); 
- c=mix(c,vec3(.55,.16,.22)*.7,exp(-d*9.));
+ float d=hz-p.y,zz=.3/d,u=p.x*zz,v=zz+z*1.4;
+ float rw=u*20., rowi=floor(rw), cx=fract(rw);
+ float isDitch=step(abs(rowi+.5),.6)*step(mod(floor((rowi+40.)/14.),1.),.5)*0.+step(abs(rowi),.5)+step(abs(rowi-7.),.5)+step(abs(rowi+8.),.5);
+ vec3 TP[5];
+ vec3 tc;
+ float pick=fract(rowi*.618+.2);
+ tc=pick<.2?vec3(.82,.06,.12):pick<.4?vec3(1.,.42,.62):pick<.6?vec3(1.,.95,.88):pick<.8?vec3(1.,.78,.18):vec3(.5,.12,.62);
+ tc=mix(tc,tc*pal(hue/360.+rowi*.07),.25);
+ vec2 cell=vec2(cx,fract(v*11.));
+ float cp=PS*d*d/.3/11.;
+ vec2 cq=(cell-vec2(.5,.45))*vec2(1.,1.25);
+ float cup=smoothstep(.38,.35,length(cq*vec2(1.,.9)))*step(cq.y,.12);
+ float petal=smoothstep(.06,.0,abs(cq.x)-.12)*step(.04,cq.y)*step(cq.y,.2)*step(abs(cq.x),.26)*step(.08,abs(abs(cq.x)-.13)+.0);
+ float head=clamp(max(cup,petal*.0+cup),0.,1.);
+ float hl=exp(-dot(cq-vec2(-.08,-.06),cq-vec2(-.08,-.06))*90.);
+ float stem=step(abs(cell.x-.5),.03)*step(cell.y,.4);
+ float rowmask=smoothstep(.02,.07,cx)*smoothstep(.98,.93,cx);
+ vec3 leaf=vec3(.03,.11,.05);
+ vec3 c=mix(vec3(.05,.035,.03),leaf,rowmask);
+ c=mix(c,leaf*1.4,stem*rowmask);
+ vec3 lit=tc*(.65+.5*smoothstep(.3,-.2,cq.x+cq.y))+vec3(1.,.9,.8)*hl*.5;
+ c=mix(c,lit,head*rowmask);
+ float aa=clamp(cp/4.,0.,1.);
+ c=mix(mix(leaf*.8,tc*.55,.6),c,aa);
+ // polder ditch reflecting the dusk sky
+ vec3 refl=skyDusk(vec2(p.x+sin(p.y*120.+t*2.)*.002,hz+d*1.1),hz,sun)*vec3(.7,.72,.85);
+ c=mix(c,refl,isDitch*smoothstep(.0,.08,cx)*smoothstep(1.,.92,cx));
+ // warm sun glint on field + atmospheric fog
+ c+=vec3(1.,.6,.4)*exp(-pow((p.x-sun.x)*3.,2.))*exp(-d*10.)*.25;
+ c=mix(c,fogc*.85,exp(-d*11.)*.9);
  return c;
 }
 vec3 scene(float m,vec2 p,float r,float a,float N){
@@ -581,7 +687,7 @@ void main(){
  c*=1.-.55*pow(clamp((r-.35)/1.1,0.,1.),1.3);
  gl_FragColor=vec4(c,1.);
 }`;
-let clubv=.2,meltv=0,gl=null,GP,GU={},glc=document.getElementById('gl'),mA=0,mB=0,gmx=1,nA_=6,goldv=0;
+let kickAt=-9,clubv=.2,meltv=0,gl=null,GP,GU={},glc=document.getElementById('gl'),mA=0,mB=0,gmx=1,nA_=6,goldv=0;
 try{
   gl=glc.getContext('webgl',{antialias:false,premultipliedAlpha:false,powerPreference:'high-performance'});
   const sh=(ty,src)=>{const o=gl.createShader(ty);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o;};
@@ -589,7 +695,7 @@ try{
   if(!gl.getProgramParameter(GP,gl.LINK_STATUS))throw 'link';
   gl.useProgram(GP);const bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
   const loc=gl.getAttribLocation(GP,'q');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-  ['res','t','z','hue','mx','nA','nB','gold','vel','mA','mB','melt','club'].forEach(k=>GU[k]=gl.getUniformLocation(GP,k));
+  ['res','t','z','hue','mx','nA','nB','gold','vel','mA','mB','melt','club','pulse'].forEach(k=>GU[k]=gl.getUniformLocation(GP,k));
   glc.style.display='block'; c.style.display='none';
 }catch(e){gl=null;}
 // resolution: native device pixels x supersampling (up to 1.5x beyond native), governed by measured frame time
@@ -621,6 +727,7 @@ function drawGL(t,dt){
   meltv+=(pr2*1.0-meltv)*.05;
   clubv+=((target.mode===6?1.15:(target.mode===4?.55:(target.mode>=7?.1:.28)))+Math.min(vel,2)*.35+(audioOn?.15:0)-clubv)*.06;
   gl.uniform1f(GU.melt,meltv); gl.uniform1f(GU.club,clubv);
+  gl.uniform1f(GU.pulse,Math.exp(-Math.max(0,performance.now()/1000-kickAt)*7));
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 
@@ -817,6 +924,7 @@ function playStep(i,t){
 }
 function crank(){
   const idx=Math.floor(scrollY/STEP);
+  if(Math.floor(idx/4)!==Math.floor(lastIdx/4)) kickAt=performance.now()/1000;
   if(!audioOn){lastIdx=idx;return;}
   if(idx===lastIdx)return;
   energy+=(Math.min(1,vel*.55+(auto?.4:.12)+boost*.4)-energy)*.25;
