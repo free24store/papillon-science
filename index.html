@@ -83,6 +83,7 @@ body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--jp);ove
 .note{display:block;font-family:var(--ui);font-size:.72rem;color:var(--mute);margin-top:14px;letter-spacing:.08em}
 .yt{position:relative;margin-top:12vh;width:100%;max-width:760px;aspect-ratio:16/9;border:1px solid var(--gold);background:#000;box-shadow:0 0 60px rgba(230,180,90,.18)}
 .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ytlink{display:inline-block;margin-top:12px;font-family:var(--ui);font-size:.74rem;letter-spacing:.1em;color:var(--mute);text-underline-offset:4px}
 .cap{font-family:var(--ui);letter-spacing:.38em;text-transform:uppercase;font-size:.68rem;color:var(--gold);margin-top:12vh}
 .cap::before{content:"\00D7\00D7\00D7";color:var(--amsred);margin-right:.9em;letter-spacing:.18em}
 .buy{margin-top:28px}
@@ -134,7 +135,8 @@ footer .in{max-width:900px;margin:0 auto}
 <a class="btn" href="#line" data-line>LINEで友だち追加する</a>
 <span class="note">登録無料 ／ いつでもブロックで解除できます</span>
 <div class="cap">Research Movie</div>
-<div class="yt"><iframe width="560" height="315" src="https://www.youtube.com/embed/sqZQmi5E_8s?si=OoOLa6IMI2pwlCYX" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe></div>
+<div class="yt" id="yt"><iframe id="ytf" width="560" height="315" src="https://www.youtube.com/embed/sqZQmi5E_8s?si=OoOLa6IMI2pwlCYX&amp;playsinline=1&amp;rel=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+<a class="ytlink" href="https://youtu.be/sqZQmi5E_8s" target="_blank" rel="noopener">再生できない場合は YouTube で見る ↗</a>
 <div class="buy"><p>スタディキットはこちらより購入可能</p>
 <a class="btn" style="margin-top:14px" href="#line" data-line>公式LINEで購入のご案内</a></div>
 </section>
@@ -142,6 +144,7 @@ footer .in{max-width:900px;margin:0 auto}
 <footer><div class="in">© Papillon Science ／ Instagram @papillonsci<br>掲載の映像・表現は、病気の治療や予防などの効果効能を示すものではありません。LINEおよびLINEロゴは、LINEヤフー株式会社の商標または登録商標です。映像には強い光や色の変化が含まれます。</div></footer>
 <script>
 const LINE_URL = "https://lin.ee/755vDwv";
+(()=>{const f=document.getElementById('ytf'); if(f && /^https?:/.test(location.origin)) f.src=f.src+'&origin='+encodeURIComponent(location.origin);})();
 document.querySelectorAll('[data-line]').forEach(a=>{a.href=LINE_URL;a.target="_blank";a.rel="noopener";});
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MOBILE=matchMedia('(pointer:coarse)').matches||innerWidth<820;
@@ -426,10 +429,10 @@ function autoStep(now){ if(!auto)return; const dt=Math.min((now-last2)/1000,.05)
   const endTop=document.getElementById('join').getBoundingClientRect().top;
   const yt=document.querySelector('.yt').getBoundingClientRect();
   if(!held1 && endTop<=innerHeight*.02){ held1=true; holdUntil=now+3200; }            // let the CTA screen breathe
-  if(!held2 && yt.top+yt.height/2<=innerHeight*.5){ held2=true; holdUntil=now+3200; } // centre the movie + purchase screen
+  if(yt.top+yt.height/2<=innerHeight*.46){ setAuto(false); document.getElementById('yt').scrollIntoView({behavior:'smooth',block:'center'}); return; } // end: movie brought to centre
   if(now>=holdUntil){
     const inEnd=endTop<innerHeight;
-    acc+=innerHeight*(inEnd?.16:.22)*dt; const st=Math.floor(acc); if(st){scrollBy(0,st);acc-=st;}
+    acc+=innerHeight*(inEnd?.3:.22)*dt; const st=Math.floor(acc); if(st){scrollBy(0,st);acc-=st;}
   }
   if(scrollY>=document.documentElement.scrollHeight-innerHeight-2){setAuto(false);return;}
   requestAnimationFrame(autoStep); }
@@ -442,6 +445,12 @@ function enter(withSound){ gate.classList.add('gone'); if(withSound){ const b=do
 document.getElementById('go').addEventListener('click',()=>enter(true));
 document.getElementById('silent').addEventListener('click',()=>enter(false));
 
+
+let glided=false,idleTimer;
+addEventListener('scroll',()=>{ clearTimeout(idleTimer); if(glided||auto) return;
+  const endTop=document.getElementById('join').getBoundingClientRect().top;
+  if(endTop<innerHeight*.15){ idleTimer=setTimeout(()=>{ const y=document.getElementById('yt').getBoundingClientRect(); if(!glided && !auto && y.top>innerHeight*.3){ glided=true; document.getElementById('yt').scrollIntoView({behavior:'smooth',block:'center'}); } },2600); }
+},{passive:true});
 /* ---------- immersive psychedelic beat (synthesized live, no files) ----------
    The scroll is the crank: each STEP px advances one 16th of the groove (stop = groove stops, tails ring out).
    Under it an ambient bed breathes; kick side-chains the bed; reverb + ping-pong delay make the space. */
