@@ -414,6 +414,7 @@ function frame(now){
     if(st!==s.state){ s.state=st; s.el.classList.toggle('on',st===1); s.el.classList.toggle('out',st===2); } });
   document.querySelector('.prog').style.width=(P*100)+'%';
   document.getElementById('hint').style.opacity=P<.02?.75:0;
+  { const et=document.getElementById('join').getBoundingClientRect().top; document.querySelector('.brandmark').style.opacity=et<innerHeight*.9?0:.8; }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
