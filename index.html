@@ -211,7 +211,7 @@ float map(vec3 p,out float mat){
 }
 float mapD(vec3 p){float m;return map(p,m);}
 vec3 nrm(vec3 p){vec2 e=vec2(.004,-.004);return normalize(e.xyy*mapD(p+e.xyy)+e.yyx*mapD(p+e.yyx)+e.yxy*mapD(p+e.yxy)+e.xxx*mapD(p+e.xxx));}
-float GLOW;
+float GLOW,SCAT; vec3 SCOL;
 float trace(vec3 ro,vec3 rd,float maxT,out float mat){
   float tt=.05; mat=0.;
   for(int i=0;i<90;i++){
@@ -221,6 +221,19 @@ float trace(vec3 ro,vec3 rd,float maxT,out float mat){
       float an=atan(v.y,v.x); float an2=(floor(an/(PI/12.))+.5)*(PI/12.);
       vec2 bp=vec2(cos(an2),sin(an2))*2.47; float db=length(vec3((v.x-bp.x)*1.3,v.y-bp.y,bz+.85));
       GLOW+=exp(-db*14.)*.06*step(0.,v.y);}
+    // volumetric light: window spill into the canal mist + roof searchlights
+    float stp=max(d*.72,.05);
+    { float wx=3.-abs(p.x); float zz=fract((p.z+1.3)/2.6*3.), yy=fract(p.y/1.05);
+      float zid=floor(p.z/2.6), lid=hs(vec2(floor(p.z/2.6*3.),floor(p.y/1.05))+step(0.,p.x)*7.);
+      float sp=exp(-max(wx,0.)*1.1)*sm(.32,.12,abs(zz-.5))*sm(.4,.15,abs(yy-.5))*step(.4,lid)*step(.5,p.y)*step(p.y,7.)*(1.-FOLD*.8);
+      SCAT+=sp*stp*.05; SCOL+=mix(vec3(1.,.6,.3),pal(lid+hue/360.),PSY*.6)*sp*stp*.05; }
+    for(int k=0;k<3;k++){ float fk=float(k);
+      float oz=floor((p.z+fk*20.)/60.)*60.+30.-fk*20.; float sd=mod(fk,2.)<.5?1.:-1.;
+      vec3 o=vec3(3.6*sd,7.8,oz);
+      vec3 dir=normalize(vec3(-sd*(.55+.45*sin(t*.45+fk*2.)),-.75,sin(t*.37+fk)*.7));
+      vec3 rel=p-o; float al=dot(rel,dir);
+      if(al>0.){ float pd=length(rel-dir*al); float I=exp(-pd*pd/(.02+al*al*.004))*exp(-al*.06)*(1.-FOLD);
+        SCAT+=I*stp*.18; SCOL+=pal(fk*.3+hue/360.+.1)*I*stp*.18; } }
     if(d<.0015*tt){mat=m;return tt;}
     tt+=d*.72; if(tt>maxT)break;
   }
@@ -300,7 +313,9 @@ void main(){
   float fov=1.05+spd*.25;
   vec3 rd=normalize(fw*1.6/fov+ruv.x*rt+ruv.y*up);
   GLOW=0.;
+  SCAT=0.;SCOL=vec3(0.);
   float mat; float T1=trace(ro,rd,95.,mat);
+  vec3 scatP=SCOL;
   vec3 col; float dist=T1<0.?95.:T1;
   // water
   float W=1.-sm(.2,.5,FOLD);
@@ -323,6 +338,32 @@ void main(){
   } else col=sky(rd);
   col=mix(col,fogc,1.-exp(-dist*.028));
   col+=vec3(1.,.78,.45)*GLOW;
+  col+=scatP*1.6;
+  // water spray: droplets thrown up from the canal, denser at speed and near bridges
+  if(W>.5){
+    float bridgeNear=exp(-abs(mod(ro.z,36.)-18.)*.25);
+    for(int k=1;k<11;k++){
+      float zp=floor(ro.z)+float(k)*1.1; float tz=(zp-ro.z)/rd.z;
+      if(tz>0. && tz<dist){
+        vec2 wp=(ro+rd*tz).xy;
+        float cx=floor(wp.x/.32);
+        for(int j=0;j<3;j++){
+          float h=hs(vec2(cx*1.7+float(j)*9.,zp));
+          float act=step(.78-spd*.25-bridgeNear*.2,h);
+          float ph=fract(t*(.45+.3*h)+h*7.);
+          float hgt=(1.4+1.6*h)*ph*(1.-ph)*(1.+spd);
+          vec2 dp=vec2(cx*.32+.16+(fract(h*13.)-.5)*.25+(ph-.5)*.18*(fract(h*5.)-.5),hgt);
+          float r=.018+tz*.003; vec2 dv=wp-dp;
+          float dr=exp(-dot(dv,dv)/(r*r))*act*(1.-ph*.6)*exp(-tz*.08);
+          col+=mix(vec3(.75,.85,1.),vec3(1.,.75,.45),fract(h*3.))*dr*1.8;
+          col+=vec3(.8,.9,1.)*exp(-dot(dv,dv)/(r*r*16.))*act*.05*(1.-ph);
+        }
+      }
+    }
+  }
+  // flash of light when gliding under a bridge
+  float ub=exp(-pow((mod(ro.z,36.)-18.)/1.2,2.))*(1.-FOLD);
+  col+=vec3(1.,.82,.55)*ub*.22;
   col+=beams(uv)*CLUB;
   // speed streak vignette
   float r=length(uv); col*=1.-.35*sm(.6,1.6,r);
@@ -379,10 +420,19 @@ const playBtn=document.getElementById('play'),icon=document.getElementById('play
 let acc=0,last2=0;
 function setAuto(on){ auto=on; playBtn.setAttribute('aria-pressed',on); playBtn.querySelector('span').textContent=on?'Pause':'Play';
   icon.setAttribute('d',on?'M3 2h4v12H3zM9 2h4v12H9z':'M4 2l10 6-10 6z');
-  if(on){ if(scrollY>=document.documentElement.scrollHeight-innerHeight-4) scrollTo(0,0); last2=performance.now(); requestAnimationFrame(autoStep);} }
+  if(on){ if(scrollY>=document.documentElement.scrollHeight-innerHeight-4){ scrollTo(0,0); held1=held2=false; } last2=performance.now(); requestAnimationFrame(autoStep);} }
+let holdUntil=0,held1=false,held2=false;
 function autoStep(now){ if(!auto)return; const dt=Math.min((now-last2)/1000,.05); last2=now;
-  acc+=innerHeight*.22*dt; const st=Math.floor(acc); if(st){scrollBy(0,st);acc-=st;}
-  if(scrollY>=track.offsetHeight-innerHeight){setAuto(false);return;} requestAnimationFrame(autoStep); }
+  const endTop=document.getElementById('join').getBoundingClientRect().top;
+  const yt=document.querySelector('.yt').getBoundingClientRect();
+  if(!held1 && endTop<=innerHeight*.02){ held1=true; holdUntil=now+3200; }            // let the CTA screen breathe
+  if(!held2 && yt.top+yt.height/2<=innerHeight*.5){ held2=true; holdUntil=now+3200; } // centre the movie + purchase screen
+  if(now>=holdUntil){
+    const inEnd=endTop<innerHeight;
+    acc+=innerHeight*(inEnd?.16:.22)*dt; const st=Math.floor(acc); if(st){scrollBy(0,st);acc-=st;}
+  }
+  if(scrollY>=document.documentElement.scrollHeight-innerHeight-2){setAuto(false);return;}
+  requestAnimationFrame(autoStep); }
 playBtn.addEventListener('click',()=>setAuto(!auto));
 ['wheel','touchstart','keydown'].forEach(ev=>addEventListener(ev,e=>{ if(auto&&!(e.target.closest&&e.target.closest('.deck'))) setAuto(false); },{passive:true}));
 
@@ -391,6 +441,7 @@ const gate=document.getElementById('gate');
 function enter(withSound){ gate.classList.add('gone'); if(withSound){ const b=document.getElementById('snd'); if(b.getAttribute('aria-pressed')!=='true') b.click(); } }
 document.getElementById('go').addEventListener('click',()=>enter(true));
 document.getElementById('silent').addEventListener('click',()=>enter(false));
+
 /* ---------- immersive psychedelic beat (synthesized live, no files) ----------
    The scroll is the crank: each STEP px advances one 16th of the groove (stop = groove stops, tails ring out).
    Under it an ambient bed breathes; kick side-chains the bed; reverb + ping-pong delay make the space. */
@@ -542,6 +593,74 @@ sndBtn.addEventListener('click',()=>{
     else { master.gain.setTargetAtTime(0,ac.currentTime,.3); }
   }catch(e){ sndBtn.querySelector('span:last-child').textContent='No audio'; }
 });
+/* ---------- spatial sound design: bridge fly-bys, splashes, canal water bed, risers & impacts ---------- */
+let extra=false,waterG,riseG,riseF,lastBridge=null,lastPhase=0,splashT=0;
+const PHASES=[.28,.42,.60,.86];
+function pan(v){ if(ac.createStereoPanner){const p=ac.createStereoPanner();p.pan.value=v;return p;} return ac.createGain(); }
+function initExtra(){
+  extra=true;
+  // brown-noise canal water bed
+  const len=ac.sampleRate*4,b=ac.createBuffer(2,len,ac.sampleRate);
+  for(let c=0;c<2;c++){const d=b.getChannelData(c);let l=0;for(let i=0;i<len;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3.2;}}
+  const src=ac.createBufferSource();src.buffer=b;src.loop=true;
+  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;
+  waterG=ac.createGain();waterG.gain.value=0;
+  const lfo=ac.createOscillator();lfo.frequency.value=.17;const lg=ac.createGain();lg.gain.value=.015;lfo.connect(lg);lg.connect(waterG.gain);lfo.start();
+  src.connect(lp);lp.connect(waterG);waterG.connect(music);waterG.connect(rev);src.start();
+  // riser bed (opens before each transformation)
+  const rs=ac.createBufferSource();rs.buffer=noiseBuf;rs.loop=true;
+  riseF=ac.createBiquadFilter();riseF.type='bandpass';riseF.Q.value=2.5;riseF.frequency.value=300;
+  riseG=ac.createGain();riseG.gain.value=0;rs.connect(riseF);riseF.connect(riseG);riseG.connect(music);riseG.connect(rev);rs.start();
+}
+function flyby(t){
+  // stereo whoosh passing left→right overhead + stone-arch boom
+  const n=ac.createBufferSource();n.buffer=noiseBuf;
+  const f=ac.createBiquadFilter();f.type='bandpass';f.Q.value=1.4;
+  f.frequency.setValueAtTime(220,t);f.frequency.exponentialRampToValueAtTime(2600,t+.55);f.frequency.exponentialRampToValueAtTime(180,t+1.4);
+  const g=ac.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.28,t+.5);g.gain.exponentialRampToValueAtTime(.001,t+1.5);
+  const p=pan(-1); if(p.pan){p.pan.setValueAtTime(-1,t);p.pan.linearRampToValueAtTime(1,t+1.3);}
+  n.connect(f);f.connect(g);g.connect(p);p.connect(music);g.connect(rev);n.start(t,Math.random());n.stop(t+1.6);
+  const o=ac.createOscillator();o.frequency.setValueAtTime(70,t+.45);o.frequency.exponentialRampToValueAtTime(30,t+1.6);
+  const og=ac.createGain();og.gain.setValueAtTime(0,t+.4);og.gain.linearRampToValueAtTime(.55,t+.5);og.gain.exponentialRampToValueAtTime(.001,t+1.8);
+  o.connect(og);og.connect(drums);og.connect(rev);o.start(t+.4);o.stop(t+1.9);
+}
+function splash(t,pv,amt){
+  const n=ac.createBufferSource();n.buffer=noiseBuf;
+  const f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=1100+Math.random()*900;
+  const g=ac.createGain();g.gain.setValueAtTime(.0,t);g.gain.linearRampToValueAtTime(.16*amt,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+.35+Math.random()*.25);
+  const p=pan(pv);n.connect(f);f.connect(g);g.connect(p);p.connect(music);g.connect(rev);n.start(t,Math.random()*1.5);n.stop(t+.7);
+  for(let k=0;k<4;k++){ // droplets
+    const o=ac.createOscillator();const tt=t+.06+Math.random()*.4;o.frequency.setValueAtTime(900+Math.random()*1400,tt);o.frequency.exponentialRampToValueAtTime(300+Math.random()*300,tt+.05);
+    const og=ac.createGain();og.gain.setValueAtTime(.05*amt,tt);og.gain.exponentialRampToValueAtTime(.001,tt+.07);
+    const pp=pan(pv+(Math.random()-.5)*.6);o.connect(og);og.connect(pp);pp.connect(music);og.connect(rev);o.start(tt);o.stop(tt+.09);
+  }
+}
+function subdrop(t){
+  const o=ac.createOscillator();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(26,t+2.2);
+  const g=ac.createGain();g.gain.setValueAtTime(.7,t);g.gain.exponentialRampToValueAtTime(.001,t+2.6);
+  o.connect(g);g.connect(drums);g.connect(rev);o.start(t);o.stop(t+2.7);
+}
+(function soundLoop(){
+  requestAnimationFrame(soundLoop);
+  if(!ac||!audioOn) return;
+  if(!extra) initExtra();
+  const now=ac.currentTime;
+  // water bed: present in the canal, fades inside the kaleidoscope
+  const canal=P<.3||P>.88?1:Math.max(0,1-(P-.3)/.08);
+  waterG.gain.setTargetAtTime(.05*canal+.02*Math.min(spd,1)*canal,now,.3);
+  // riser toward each transformation
+  let r=0; PHASES.forEach(th=>{ const d=th-P; if(d>0&&d<.06) r=Math.max(r,1-d/.06); });
+  riseG.gain.setTargetAtTime(r*r*.12,now,.08); riseF.frequency.setTargetAtTime(300+r*4200,now,.08);
+  // impact + sub drop when crossing a threshold
+  PHASES.forEach(th=>{ if(lastPhase<th && P>=th){ impact(now+.02); subdrop(now+.02); kickAt=performance.now()/1000; } });
+  lastPhase=P;
+  // bridge fly-by
+  const bi=Math.floor((cz-18+3)/36);
+  if(lastBridge!==null && bi!==lastBridge && canal>.5) flyby(now+.01);
+  lastBridge=bi;
+  // splashes, more frequent with speed
+  if(canal>.5 && performance.now()>splashT){ splash(now+.01,(Math.random()*2-1)*.9,.5+Math.min(spd,1)); splashT=performance.now()+(2400-Math.min(spd,1)*1700)*(.6+Math.random()*.8); }
+})();
 </script>
 
 </body>
